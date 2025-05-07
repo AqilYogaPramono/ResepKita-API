@@ -8,8 +8,8 @@ const cors = require('cors')
 
 dotenv.config()
 
-const { db, connectDB } = require('./config/connection')
-
+const { db, connectDB } = require('./config/database')
+const models = require('./models')
 
 var indexRouter = require('./routes/index')
 var usersRouter = require('./routes/users')
@@ -32,7 +32,7 @@ app.use('/users', usersRouter)
 
 async function initialize() {
   await connectDB()
-  await db.sync( { alter: false, force: false })
+  await db.sync( { alter: false, force: true })
   console.log("Database success sync")
 }
 
