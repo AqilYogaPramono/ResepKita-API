@@ -5,15 +5,12 @@ var cookieParser = require('cookie-parser')
 var logger = require('morgan')
 var dotenv = require('dotenv')
 const cors = require('cors')
+const { onlyDomain } = require('./middlewares/corsOption')
 
 dotenv.config()
 
-const { db, connectDB } = require('./config/database')
-const models = require('./models')
-const { onlyDomain } = require('./middlewares/corsOption')
-
 var indexRouter = require('./routes/index')
-var usersRouter = require('./routes/users')
+var authRouter = require('./routes/auth')
 
 var app = express()
 
@@ -29,18 +26,8 @@ app.use(cookieParser())
 app.use(express.static(path.join(__dirname, 'public')))
 
 app.use('/', indexRouter)
-app.use('/users', usersRouter)
+app.use('/API', authRouter)
 
-async function initialize() {
-  await connectDB()
-  await db.sync( { alter: false, force: true })
-  console.log("Database success sync")
-}
-
-initialize()
-.catch(error => {
-  console.error("Failed to initialize database: ", error)
-})
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
