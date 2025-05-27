@@ -42,6 +42,26 @@ class userModel {
         });
         });
     }
+
+    static async login(email, password) {
+        return new Promise((resolve, reject) => {
+        const sql = 'SELECT * FROM users WHERE email = ?';
+        db.query(sql, [email], async (err, results) => {
+            if (err) return reject({ status: 500, message: err.message });
+            if (results.length === 0) return resolve(null);
+            const user = results[0];
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!isMatch)
+            return reject({ status: 401, message: 'Wrong password.' });
+            const token = jwt.sign(
+            { id: user.id, role: 'user', email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '1000d' }
+            );
+            resolve({ token });
+        });
+        });
+    }
 }
 
 module.exports = userModel;

@@ -94,4 +94,32 @@ router.post('/register', upload.single('profile_photo'), async (req, res) => {
   }
 });
 
+router.post('/login', limiter, async (req, res) => {
+  const { email, password } = req.body;
+  if (!email)
+    return res.status(400).json({ message: 'Email is required.' });
+  if (!password)
+    return res.status(400).json({ message: 'Password is required.' });
+
+  try {
+    let user = await userModel.login(email, password);
+    let userType = null;
+    if (user) {
+      userType = 'user';
+    } else {
+      user = await adminModel.login(email, password);
+      if (user) {
+        userType = 'admin';
+      } else {
+        return res.status(403).json({ message: 'Email not found.' });
+      }
+    }
+    res.status(200).json({ token: user.token, userType });
+  } catch (e) {
+    res.status(e.status || 500).json({ message: e.message });
+  }
+});
+
+
+
 module.exports = router;
