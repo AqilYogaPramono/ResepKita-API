@@ -20,7 +20,7 @@ function authorize(AllowedRoles = []) {
         if (!req.user) {
             return res.status(403).json ({ message: 'User not authentacated'})
         }
-        if (!AllowedRoles.includes(req.user.type)) {
+        if (!AllowedRoles.includes(req.user.role)) {
             return res.status(403).json ({ message: 'Acess denied: You do not have premission'}) 
         }
         next()
