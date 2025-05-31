@@ -9,6 +9,24 @@ class favoriteModel {
         })
         })
     }
+
+    static getFavorite(userId, recipeId) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT user_id, recipe_id FROM favorites WHERE user_id = ? AND recipe_id = ?`, [userId, recipeId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
+
+        static createFavorite(userId, recipeId) {
+        return new Promise((resolve, reject) => {
+        db.query(`INSERT INTO favorites (user_id, recipe_id) VALUES (?, ?);`, [userId, recipeId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = favoriteModel

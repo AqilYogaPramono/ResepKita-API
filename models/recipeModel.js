@@ -9,6 +9,15 @@ class recipeModel {
         })
         })
     }
+
+    static getRecipeById(recipeId) {
+        return new Promise((resolve, reject) => {
+        db.query(`select * from recipes where id = ?`, [recipeId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = recipeModel

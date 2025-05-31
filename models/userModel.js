@@ -62,6 +62,15 @@ class userModel {
         })
         })
     }
+
+    static getUserById(userId) {
+        return new Promise((resolve, reject) => {
+        db.query(`select * from users where id = ?`, [userId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = userModel
