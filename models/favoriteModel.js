@@ -19,9 +19,18 @@ class favoriteModel {
         })
     }
 
-        static createFavorite(userId, recipeId) {
+    static createFavorite(userId, recipeId) {
         return new Promise((resolve, reject) => {
-        db.query(`INSERT INTO favorites (user_id, recipe_id) VALUES (?, ?);`, [userId, recipeId], (err, results) => {
+        db.query(`INSERT INTO favorites (user_id, recipe_id) VALUES (?, ?)`, [userId, recipeId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
+
+    static deleteFavorite(userId, recipeId) {
+        return new Promise((resolve, reject) => {
+        db.query(`DELETE FROM favorites WHERE user_id = ? AND recipe_id = ?`, [userId, recipeId], (err, results) => {
             if (err) return reject(err)
             resolve(results)
         })
