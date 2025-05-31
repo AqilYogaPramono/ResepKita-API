@@ -18,6 +18,15 @@ class recipeModel {
         })
         })
     }
+
+    static getRecipeByTitle(userId, title) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT r.id, (SELECT photo_url FROM recipe_photos WHERE recipe_id = r.id LIMIT 1) AS recipe_photo, r.title, u.nickname, COUNT(t.id) AS total_testimonials FROM recipes r JOIN users u ON r.user_id = u.id LEFT JOIN testimonials t ON t.recipe_id = r.id WHERE r.user_id != ? AND r.title COLLATE utf8mb4_0900_ai_ci LIKE CONCAT('%', ?, '%') GROUP BY r.id ORDER BY r.id DESC`, [userId, title], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = recipeModel
