@@ -28,7 +28,7 @@ class userModel {
         const sql = 'SELECT * FROM users WHERE username = ?'
         db.query(sql, [username], (err, results) => {
             if (err) return reject(err)
-            resolve(results[0])
+            resolve(results)
         })
         })
     }
@@ -38,7 +38,7 @@ class userModel {
         const sql = 'SELECT * FROM users WHERE email = ?'
         db.query(sql, [email], (err, results) => {
             if (err) return reject(err)
-            resolve(results[0])
+            resolve(results)
         })
         })
     }
