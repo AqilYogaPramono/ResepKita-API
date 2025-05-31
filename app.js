@@ -10,7 +10,19 @@ const { onlyDomain } = require('./middlewares/corsOption')
 dotenv.config()
 
 var indexRouter = require('./routes/index')
-var authRouter = require('./routes/auth')
+var authRoutes = require('./routes/auth')
+
+//admin
+const adminDashboard = require('./routes/adminRoutes/dashboard')
+const adminDetailRecipe = require('./routes/adminRoutes/detailRecipe')
+const adminListRecipe = require('./routes/adminRoutes/listRecipe')
+
+//user
+const userDashboard = require('./routes/userRoutes/dashboard')
+const userProfile = require('./routes/userRoutes/profile')
+const userSaveRecipe = require('./routes/userRoutes/saveRecipe')
+const userSearch = require('./routes/userRoutes/search')
+const userTestimonial = require('./routes/userRoutes/dashboard')
 
 var app = express()
 
@@ -26,8 +38,19 @@ app.use(cookieParser())
 app.use(express.static(path.join(__dirname, 'public')))
 
 app.use('/', indexRouter)
-app.use('/API', authRouter)
+app.use('/API', authRoutes)
 
+//admin
+app.use('/API', adminDashboard)
+app.use('/API', adminDetailRecipe)
+app.use('/API', adminListRecipe)
+
+//user
+app.use('/API', userDashboard)
+app.use('/API', userProfile)
+app.use('/API', userSaveRecipe)
+app.use('/API', userSearch)
+app.use('/API', userTestimonial)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
