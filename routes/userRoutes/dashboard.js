@@ -1,12 +1,14 @@
 var express = require('express')
 var router = express.Router()
+const recipeModel = require('../../models/recipeModel')
 const { verifyToken, authorize } = require('../../middlewares/jwt')
-const { cacheMiddleware, myCache } = require('../../middlewares/nodeCache')
 
-router.get('/user/', verifyToken, authorize(['user']), cacheMiddleware, async (req, res, next) => {
+router.get('/user/dashboard', verifyToken, authorize(['user']), async (req, res, next) => {
+    userId = req.user.id
+
     try {
-
-        res.status(200).json(respon)
+        let rows = await recipeModel.dashboards(userId)
+        res.status(200).json(rows)
     } catch (e) {
         res.status(500).json({ message: e.message })
     }
