@@ -143,6 +143,16 @@ class userModel {
         })
         })
     }
+
+    static updatePasswordProfile (newPassword, userId) {
+        return new Promise(async(resolve, reject) => {
+        const hashedPassword = await bcrypt.hash(newPassword, 10)
+        db.query(`UPDATE users SET password = ? WHERE id = ?`, [hashedPassword, userId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = userModel
