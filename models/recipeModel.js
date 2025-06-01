@@ -31,6 +31,15 @@ static dashboards(userId) {
         })
         })
     }
+
+    static getTitleByRecipeAndUser(recipeId,userId) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT r.title FROM recipes AS r WHERE r.id = ? AND r.user_id = ?`, [recipeId, userId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = recipeModel
