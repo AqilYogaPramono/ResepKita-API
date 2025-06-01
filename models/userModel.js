@@ -71,6 +71,15 @@ class userModel {
         })
         })
     }
+
+    static profileUserById(userId) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT u.photo_profile, u.username, u.nickname, u.bio, ( SELECT COUNT(*) FROM testimonials t WHERE t.user_id = u.id ) AS total_testimonials, ( SELECT COUNT(*) FROM recipes r WHERE r.user_id = u.id AND r.status = 'approved' ) AS total_recipes_published FROM users u WHERE u.id = ?`, [userId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = userModel
