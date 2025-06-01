@@ -108,7 +108,7 @@ class userModel {
         })
     }
 
-    static updatePfofile(username, nickname, profile_photo, bio, userId) {
+    static updateProfile(username, nickname, profile_photo, bio, userId) {
         return new Promise((resolve, reject) => {
         db.query(`UPDATE users SET username = ?, nickname = ?, photo_profile = ?, bio = ? WHERE id = ?`, [username, nickname, profile_photo, bio, userId], (err, results) => {
             if (err) return reject(err)
@@ -120,6 +120,24 @@ class userModel {
     static getByUsernameToUpdate(username, userId){
         return new Promise((resolve, reject) => {
         db.query(`SELECT username FROM users WHERE username = ? AND id != ?`, [username, userId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
+
+    static getByEmailToUpdate(newEmail, userId) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT email FROM users WHERE username = ? AND id != ?`, [newEmail, userId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
+
+    static updateEmailProfile(newEmail, userId) {
+        return new Promise((resolve, reject) => {
+        db.query(`UPDATE users SET email = ? WHERE id = ?`, [newEmail, userId], (err, results) => {
             if (err) return reject(err)
             resolve(results)
         })
