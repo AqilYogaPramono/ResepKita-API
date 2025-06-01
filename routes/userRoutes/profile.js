@@ -157,4 +157,52 @@ router.patch('/user/profile/:profileId', verifyToken, authorize(['user']), uploa
     }
 })
 
+router.patch('/user/profile/change_email/:profileId', verifyToken, authorize(['user']), async (req, res, next) => {
+    const userId = req.user.id
+    const {profileId} = req.params
+    const {email, newEmail, confirmationEmail} = req.body
+
+    try {
+        const checkUserId = await userModel.getUserById(userId)
+        if (checkUserId.length == 0) {
+            deleteUploadedFile(req.file)
+            return res.status(404).json({ message: 'User not found'})
+        }
+
+        const checkProfileId = await userModel.getUserById(profileId)
+        if (checkProfileId.length == 0) {
+            deleteUploadedFile(req.file)
+            return res.status(404).json({ message: 'Profile not found'})
+        }
+        
+        if (profileId != userId) {
+            deleteUploadedFile(req.file)
+            return res.status(403).json({ message: 'Cannot udpate profile'})
+        }
+
+        if (checkProfileId[0].email != email) {
+            deleteUploadedFile(req.file)
+            return res.status(404).json({ message: 'Your email is wrong'})
+        }
+
+        if (newEmail != confirmationEmail) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Email and confirmation email do not match.' })
+        }
+
+        const usersWithSameEmail = await userModel.getByEmailToUpdate(newEmail, userId)
+        if (usersWithSameEmail.length > 0) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Email already exists.' })
+        }
+
+        await userModel.updateEmailProfile(newEmail, userId)
+
+        res.status(200).json({message: 'OK'})
+    } catch (e) {
+        deleteUploadedFile(req.file)
+        res.status(500).json({ message: e.message })
+    }
+})
+
 module.exports = router
