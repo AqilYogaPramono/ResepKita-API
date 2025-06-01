@@ -49,6 +49,16 @@ router.post('/user/save_recipe/:recipeId', verifyToken, authorize(['user']), cac
             return res.status(403).json({ message: 'Recipe already favorite'})
         }
 
+        const checkStatusRecipe = await recipeModel.getRecipeById(recipeId)
+        if (checkStatusRecipe[0].status != 'approved') {
+            return res.status(403).json({ message: 'Recipe Is private'})
+        }
+
+        const checkOwnerRecipe = await recipeModel.getTitleByRecipeAndUser(recipeId, userId)
+        if (checkOwnerRecipe.length > 0) {
+            return res.status(403).json({ message: 'cant save own recipe'})
+        }
+
         if (req.cacheHit && req.cachedData) {
             return res.status(200).json({...req.cachedData, cache: 'Cache use' })
         }
