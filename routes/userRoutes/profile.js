@@ -3,6 +3,7 @@ var router = express.Router()
 const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
+const bcrypt = require('bcryptjs')
 const userModel = require('../../models/userModel')
 const { verifyToken, authorize } = require('../../middlewares/jwt')
 const { cacheMiddleware, myCache } = require('../../middlewares/nodeCache')
@@ -197,6 +198,66 @@ router.patch('/user/profile/change_email/:profileId', verifyToken, authorize(['u
         }
 
         await userModel.updateEmailProfile(newEmail, userId)
+
+        res.status(200).json({message: 'OK'})
+    } catch (e) {
+        deleteUploadedFile(req.file)
+        res.status(500).json({ message: e.message })
+    }
+})
+
+router.patch('/user/profile/change_password/:profileId', verifyToken, authorize(['user']), async (req, res, next) => {
+    const userId = req.user.id
+    const {profileId} = req.params
+    const {password, newPassword, confirmationPassword} = req.body
+
+    try {
+        const checkUserId = await userModel.getUserById(userId)
+        if (checkUserId.length == 0) {
+            deleteUploadedFile(req.file)
+            return res.status(404).json({ message: 'User not found'})
+        }
+
+        const checkProfileId = await userModel.getUserById(profileId)
+        if (checkProfileId.length == 0) {
+            deleteUploadedFile(req.file)
+            return res.status(404).json({ message: 'Profile not found'})
+        }
+        
+        if (profileId != userId) {
+            deleteUploadedFile(req.file)
+            return res.status(403).json({ message: 'Cannot udpate profile'})
+        }
+
+        const isMatch = await bcrypt.compare(password, checkProfileId[0].password)
+        if (!isMatch) {
+            deleteUploadedFile(req.file)
+            return res.status(404).json({ message: 'Your password is wrong'})
+        }
+
+        if (newPassword != confirmationPassword) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Password and confirmation password do not match.' })
+        }
+
+        if (newPassword.length < 6) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Password must be at least 6 characters.' })
+        }
+        if (!/[A-Z]/.test(newPassword)) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Password must have at least one uppercase letter.' })
+        }
+        if (!/[a-z]/.test(newPassword)) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Password must have at least one lowercase letter.' })
+        }
+        if (!/\d/.test(newPassword)) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Password must contain at least one number.' })
+        }
+
+        await userModel.updatePasswordProfile (newPassword, userId)
 
         res.status(200).json({message: 'OK'})
     } catch (e) {
