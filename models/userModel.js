@@ -153,6 +153,15 @@ class userModel {
         })
         })
     }
+
+    static getUserTotestimoni(userId) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT username, photo_profile FROM users WHERE id = ?;`, [userId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = userModel
