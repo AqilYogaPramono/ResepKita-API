@@ -22,7 +22,7 @@ const userDashboard = require('./routes/userRoutes/dashboard')
 const userProfile = require('./routes/userRoutes/profile')
 const userSaveRecipe = require('./routes/userRoutes/saveRecipe')
 const userSearch = require('./routes/userRoutes/search')
-const userTestimonial = require('./routes/userRoutes/dashboard')
+const userTestimonial = require('./routes/userRoutes/testimonial')
 
 var app = express()
 
