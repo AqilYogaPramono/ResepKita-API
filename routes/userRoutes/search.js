@@ -15,14 +15,8 @@ router.post('/user/search_title', verifyToken, authorize(['user']), cacheMiddlew
             return res.status(404).json({ message: 'User not found'})
         }
 
-        if (req.cacheHit && req.cachedData) {
-            return res.status(200).json({...req.cachedData, cache: 'Cache use' })
-        }
-
         const rows = await recipeModel.getRecipeByTitle(userId, title)
-        const respon = { rows, cache: 'Cache not use' }
-        myCache.set(req.originalUrl, respon)
-        res.status(200).json(respon)
+        res.status(200).json(rows)
     } catch (e) {
         res.status(500).json({ message: e.message })
     }
