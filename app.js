@@ -23,6 +23,7 @@ const userProfile = require('./routes/userRoutes/profile')
 const userSaveRecipe = require('./routes/userRoutes/saveRecipe')
 const userSearch = require('./routes/userRoutes/search')
 const userTestimonial = require('./routes/userRoutes/testimonial')
+const userRecipe = require('./routes/userRoutes/recipe')
 
 var app = express()
 
@@ -51,6 +52,7 @@ app.use('/API', userProfile)
 app.use('/API', userSaveRecipe)
 app.use('/API', userSearch)
 app.use('/API', userTestimonial)
+app.use('/API', userRecipe)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

@@ -4,7 +4,7 @@ const recipeModel = require('../../models/recipeModel')
 const { verifyToken, authorize } = require('../../middlewares/jwt')
 
 router.get('/user/dashboard', verifyToken, authorize(['user']), async (req, res, next) => {
-    userId = req.user.id
+    const userId = req.user.id
 
     try {
         let rows = await recipeModel.dashboards(userId)
