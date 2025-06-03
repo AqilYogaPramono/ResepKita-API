@@ -1,8 +1,55 @@
 var express = require('express')
 var router = express.Router()
+const multer = require('multer')
+const path = require('path')
+const fs = require('fs')
 const recipeModel = require('../../models/recipeModel')
 const userModel = require('../../models/userModel')
 const { verifyToken, authorize } = require('../../middlewares/jwt')
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        if (file.fieldname === 'recipePhotos') {
+            cb(null, path.join(__dirname, '../../public/images/recipe'))
+        } else if (file.fieldname === 'instructionPhotos') {
+            cb(null, path.join(__dirname, '../../public/images/intruction'))
+        } else {
+            cb(new Error('Invalid field name'), null)
+        }
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9)
+        cb(null, uniqueSuffix + path.extname(file.originalname))
+    }
+})
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png/
+        const isValid = allowedTypes.test(file.mimetype) && allowedTypes.test(path.extname(file.originalname).toLowerCase())
+        isValid ? cb(null, true) : cb(new Error('Only image files (jpeg, jpg, png) are allowed'))
+    }
+})
+
+const uploadFields = upload.fields([
+    { name: 'recipePhotos' },
+    { name: 'instructionPhotos'}
+])
+
+// Delete helper
+const deleteUploadedFiles = (files) => {
+    if (!files) return
+    const allFiles = [...(files.recipePhotos || []), ...(files.instructionPhotos || [])]
+    allFiles.forEach(file => {
+        const photoPath =
+            file.fieldname === 'recipePhotos'
+                ? path.join(__dirname, '../../public/images/recipe', file.filename)
+                : path.join(__dirname, '../../public/images/intruction', file.filename)
+        if (fs.existsSync(photoPath)) fs.unlinkSync(photoPath)
+    })
+}
 
 router.get('/user/:recipeId/detail_recipe', verifyToken, authorize(['user']), async (req, res, next) => {
     const userId = req.user.id
@@ -27,6 +74,45 @@ router.get('/user/:recipeId/detail_recipe', verifyToken, authorize(['user']), as
         res.status(200).json({detailRecipe, testimonials, checkOwnerRecipe, checkCanTestimoni})
     } catch (e) {
         res.status(500).json({ message: e.message })
+    }
+})
+
+router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadFields, async (req, res) => {
+    const userId = req.user.id
+    const { title, description, portion, cookingTime, status } = req.body
+
+    let ingredients = req.body.ingredients
+    let instructions = req.body.instructions
+
+    if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
+    if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
+
+    try {
+        const userCheck = await userModel.getUserById(userId)
+        if (userCheck.length === 0) {
+            deleteUploadedFiles(req.files)
+            return res.status(404).json({ message: 'User not found' })
+        }
+
+        const recipePhotos = (req.files.recipePhotos).map(file => file.filename)
+        const instructionPhotos = (req.files.instructionPhotos).map(file => file.filename)
+
+        if (recipePhotos.length > 3) {
+            deleteUploadedFiles(req.files)
+            return res.status(404).json({ message: 'Maximum 3 recipe photos are allowed.' })
+        }
+
+        if (status != 'process' && status != 'rejected') {
+            deleteUploadedFiles(req.files)
+            return res.status(404).json({ message: 'Please check status' })
+        }
+
+        await recipeModel.createRecipe(userId, title, description, portion, cookingTime, status, ingredients, instructions, recipePhotos, instructionPhotos)
+
+        res.status(201).json({ message: 'OK' })
+    } catch (error) {
+        deleteUploadedFiles(req.files)
+        res.status(500).json({ message: error.message })
     }
 })
 

@@ -82,6 +82,37 @@ static dashboards(userId) {
         })
         })
     }
+
+static createRecipe(userId, title, description, portion, cookingTime, status, ingredients, instructions, recipePhotos, instructionPhotos) {
+    return new Promise(async (resolve, reject) => {
+        db.query(`INSERT INTO recipes (user_id, title, description, portion, cooking_time, status) VALUES (?, ?, ?, ?, ?, ?)`, 
+        [userId, title, description, portion, cookingTime, status], async (err, recipeResult) => {
+            if (err) return reject(err)
+
+            const recipeId = recipeResult.insertId
+
+            for (const item of ingredients) {
+                db.query(`INSERT INTO ingredients (recipe_id, name) VALUES (?, ?)`, [recipeId, item], () => {})
+            }
+
+            for (let i = 0; i < instructions.length; i++) {
+                db.query(`INSERT INTO instructions (recipe_id, step_description) VALUES (?, ?)`, [recipeId, instructions[i]], (err, instructionResult) => {
+                    if (instructionPhotos[i]) {
+                        db.query(`INSERT INTO instruction_photos (instruction_id, photo_url) VALUES (?, ?)`, [instructionResult.insertId, instructionPhotos[i]], () => {})
+                    }
+                })
+            }
+
+            for (const photo of recipePhotos) {
+                db.query(`INSERT INTO recipe_photos (recipe_id, photo_url) VALUES (?, ?)`, [recipeId, photo], () => {})
+            }
+
+            resolve()
+        })
+    })
+}
+
+
 }
 
 module.exports = recipeModel
