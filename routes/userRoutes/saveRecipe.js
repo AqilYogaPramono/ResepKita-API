@@ -5,7 +5,6 @@ const recipeModel = require('../../models/recipeModel')
 const userModel = require('../../models/userModel')
 const { verifyToken, authorize } = require('../../middlewares/jwt')
 const { cacheMiddleware, myCache } = require('../../middlewares/nodeCache')
-const { changeUser } = require('../../configs/db')
 
 router.get('/user/favorite_recipe', verifyToken, authorize(['user']), cacheMiddleware, async (req, res, next) => {
     const userId = req.user.id

@@ -40,6 +40,48 @@ static dashboards(userId) {
         })
         })
     }
+
+    static getDetailRecipeById(userId, recipeId) {
+        return new Promise((resolve, reject) => {
+            db.query(`SELECT r.id AS recipe_id, u.username AS recipe_creator_username, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', rp.photo_url, '"') ORDER BY rp.id), ']') AS recipe_photo, r.title AS recipe_name, r.description AS recipe_bio, r.cooking_time, r.portion AS total_portions, ( SELECT JSON_ARRAYAGG(ing.name) FROM ingredients AS ing WHERE ing.recipe_id = r.id ) AS ingredients, ( SELECT JSON_ARRAYAGG( JSON_OBJECT( 'introduction', ins.step_description, 'instruction_photos', ( SELECT JSON_ARRAYAGG(ip.photo_url) FROM instruction_photos AS ip WHERE ip.instruction_id = ins.id ) ) ) FROM instructions AS ins WHERE ins.recipe_id = r.id ) AS all_instructions, CASE WHEN EXISTS (SELECT 1 FROM favorites WHERE user_id = ? AND recipe_id = r.id) THEN 'TRUE' ELSE 'FALSE' END AS is_save FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN recipe_photos AS rp ON r.id = rp.recipe_id WHERE r.id = ? AND r.status = 'approved' GROUP BY r.id, u.username, r.title, r.description, r.cooking_time, r.portion`, [userId, recipeId], (err, results) => {
+                if (err) return reject(err)
+                const formattedResults = results.map(row => ({
+                    ...row,
+                    recipe_photo: JSON.parse(row.recipe_photo || '[]'),
+                    ingredients: JSON.parse(row.ingredients || '[]'),
+                    all_instructions: JSON.parse(row.all_instructions || '[]')
+                }))
+                resolve(formattedResults)
+            })
+        })
+    }
+
+    static checkOwnerRecipe(userId, recipeId) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT CASE WHEN r.user_id = ? THEN 'TRUE' ELSE 'FALSE' END AS is_owner FROM recipes AS r WHERE r.id = ?`, [userId, recipeId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
+
+    static checkCanTestimoni(userId, recipeId) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT CASE WHEN EXISTS (SELECT 1 FROM testimonials WHERE user_id = ? AND recipe_id = r.id) THEN 'FALSE' ELSE 'TRUE' END AS can_testimoni FROM recipes AS r WHERE r.id = ?`, [userId, recipeId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
+
+    static getTetstimonial(recipeId, userId) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT COUNT(t.id) OVER() AS total_testimonials_count, u.photo_profile, u.username, t.comment FROM testimonials AS t JOIN users AS u ON t.user_id = u.id WHERE t.recipe_id = ? AND t.user_id != ? ORDER BY RAND() LIMIT 3`, [recipeId, userId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = recipeModel
