@@ -39,6 +39,32 @@ static createTestimoni(userId, recipeId, comment, testimonialPhotos) {
         })
         })
     }
+
+    static getTestimoniByUserId(recipeId, userId) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT u.username AS testimonial_creator_username, t.comment AS testimonial_text, CONCAT( '[', GROUP_CONCAT(DISTINCT CONCAT('"', tp.photo_url, '"') ORDER BY tp.id), ']' ) AS testimonial_photos FROM testimonials AS t JOIN users AS u ON t.user_id = u.id LEFT JOIN testimonial_photos AS tp ON t.id = tp.testimonial_id WHERE t.recipe_id = ? AND t.user_id = ? GROUP BY t.id, u.username, t.comment;`, [recipeId, userId], (err, results) => {
+            if (err) return reject(err)
+            const formattedResults = results.map(row => ({
+                ...row,
+                testimonial_photos: JSON.parse(row.testimonial_photos || '[]')
+            }))
+            resolve(formattedResults)
+        })
+        })
+    }
+
+    static getAllTestimoni(recipeId, userId) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT u.username AS testimonial_creator_username, t.comment AS testimonial_text, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', tp.photo_url, '"') ORDER BY tp.id), ']') AS testimonial_photos FROM testimonials AS t JOIN users AS u ON t.user_id = u.id LEFT JOIN testimonial_photos AS tp ON t.id = tp.testimonial_id WHERE t.recipe_id = ? AND t.user_id != ? GROUP BY t.id, u.username, t.comment ORDER BY RAND();`, [recipeId, userId], (err, results) => {
+            if (err) return reject(err)
+            const formattedResults = results.map(row => ({
+                ...row,
+                testimonial_photos: JSON.parse(row.testimonial_photos || '[]')
+            }))
+            resolve(formattedResults)
+        })
+        })
+    }
 }
 
 module.exports = testimonialModel

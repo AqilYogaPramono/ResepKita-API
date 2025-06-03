@@ -64,43 +64,67 @@ router.post('/user/:recipeId/create_testimoni', verifyToken, authorize(['user'])
     const { comment } = req.body
     
     try {
-            if (req.files.length == 0) {
-                return res.status(400).json({ message: 'Testimonial photos are required.' })
-            }
-
-            const testimonialPhotos = req.files.map(file => file.filename)
-
-            const checkUserId = await userModel.getUserById(userId)
-            if (checkUserId.length == 0) {
-                deleteUploadedFiles(req.files)
-                return res.status(404).json({ message: 'User not found' })
-            }
-
-            const checkRecipeId = await recipeModel.getRecipeById(recipeId)
-            if (checkRecipeId.length == 0) {
-                deleteUploadedFiles(req.files)
-                return res.status(403).json({ message: 'Recipe not found' })
-            }
-
-            const checkTetimoni = await testimonialModel.checkTetimoni(userId, recipeId)
-            if (checkTetimoni.length > 0) {
-                deleteUploadedFiles(req.files)
-                return res.status(403).json({ message: 'User already created testimonial' })
-            }
-
-            if (testimonialPhotos.length > 3) {
-                deleteUploadedFiles(req.files)
-                return res.status(403).json({ message: 'Maximum 3 testimonial photos are allowed.' })
-            }
-
-            await testimonialModel.createTestimoni(userId, recipeId, comment, testimonialPhotos)
-
-            res.status(200).json({ message: 'OK' })
-        } catch (e) {
-            deleteUploadedFiles(req.files)
-            res.status(500).json({ message: e.message })
+        if (req.files.length == 0) {
+            return res.status(400).json({ message: 'Testimonial photos are required.' })
         }
+        
+        const testimonialPhotos = req.files.map(file => file.filename)
+        
+        const checkUserId = await userModel.getUserById(userId)
+        if (checkUserId.length == 0) {
+            deleteUploadedFiles(req.files)
+            return res.status(404).json({ message: 'User not found' })
+        }
+        
+        const checkRecipeId = await recipeModel.getRecipeById(recipeId)
+        if (checkRecipeId.length == 0) {
+            deleteUploadedFiles(req.files)
+            return res.status(403).json({ message: 'Recipe not found' })
+        }
+
+        const checkTetimoni = await testimonialModel.checkTetimoni(userId, recipeId)
+        if (checkTetimoni.length > 0) {
+            deleteUploadedFiles(req.files)
+            return res.status(403).json({ message: 'User already created testimonial' })
+        }
+
+        if (testimonialPhotos.length > 3) {
+            deleteUploadedFiles(req.files)
+            return res.status(403).json({ message: 'Maximum 3 testimonial photos are allowed.' })
+        }
+
+        await testimonialModel.createTestimoni(userId, recipeId, comment, testimonialPhotos)
+
+        res.status(200).json({ message: 'OK' })
+    } catch (e) {
+        deleteUploadedFiles(req.files)
+        res.status(500).json({ message: e.message })
     }
-)
+})
+
+router.get('/user/:recipeId/testimoni', verifyToken, authorize(['user']), async (req, res, next) => {
+    const userId = req.user.id
+    const { recipeId } = req.params
+
+    try {
+        const checkUserId = await userModel.getUserById(userId)
+        if (checkUserId.length == 0) {
+            return res.status(404).json({ message: 'User not found'})
+        }
+
+        const checkRecipeId = await recipeModel.getRecipeById(recipeId)
+        if (checkRecipeId.length == 0) {
+            deleteUploadedFiles(req.files)
+            return res.status(403).json({ message: 'Recipe not found' })
+        }
+
+        const getTestimoniByUser = await testimonialModel.getTestimoniByUserId(recipeId, userId)
+        const getAllTestimoni = await testimonialModel.getAllTestimoni(recipeId, userId)
+
+        res.status(200).json({getTestimoniByUser, getAllTestimoni})
+    } catch (e) {
+        res.status(500).json({ message: e.message })
+    }
+})
 
 module.exports = router
