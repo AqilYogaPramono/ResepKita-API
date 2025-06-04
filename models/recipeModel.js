@@ -228,6 +228,30 @@ static dashboards(userId) {
         })
         })
     }
+
+    static getDetailRecipeApprovedById(recipeId) {
+        return new Promise((resolve, reject) => {
+            db.query(`SELECT r.id AS recipe_id, u.username AS recipe_creator_username, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', rp.photo_url, '"') ORDER BY rp.id), ']') AS recipe_photo, r.title AS recipe_name, r.description AS recipe_bio, r.cooking_time, r.portion AS total_portions, ( SELECT JSON_ARRAYAGG(ing.name) FROM ingredients AS ing WHERE ing.recipe_id = r.id ) AS ingredients, ( SELECT JSON_ARRAYAGG( JSON_OBJECT( 'introduction', ins.step_description, 'instruction_photos', ( SELECT JSON_ARRAYAGG(ip.photo_url) FROM instruction_photos AS ip WHERE ip.instruction_id = ins.id ) ) ) FROM instructions AS ins WHERE ins.recipe_id = r.id ) AS all_instructions FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN recipe_photos AS rp ON r.id = rp.recipe_id WHERE r.id = ? AND r.status = 'approved' GROUP BY r.id, u.username, r.title, r.description, r.cooking_time, r.portion`, [recipeId], (err, results) => {
+                if (err) return reject(err)
+                const formattedResults = results.map(row => ({
+                    ...row,
+                    recipe_photo: JSON.parse(row.recipe_photo || '[]'),
+                    ingredients: JSON.parse(row.ingredients || '[]'),
+                    all_instructions: JSON.parse(row.all_instructions || '[]')
+                }))
+                resolve(formattedResults)
+            })
+        })
+    }
+
+    static getAdminCommentByIdRecipe(recipeId) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT a.username AS admin_name, r.admin_comment AS admin_comment FROM recipes AS r LEFT JOIN admins AS a ON r.admin_id = a.id WHERE r.id = ?`, [recipeId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = recipeModel
