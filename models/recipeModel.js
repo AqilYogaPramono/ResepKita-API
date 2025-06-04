@@ -213,7 +213,16 @@ static dashboards(userId) {
 
     static getRecipeApproved() {
         return new Promise((resolve, reject) => {
-        db.query(`SELECT r.id AS recipe_id, r.title AS recipe_name, u.username AS recipe_creator, a.username AS admin_name, (SELECT rp2.photo_url FROM recipe_photos rp2 WHERE rp2.recipe_id = r.id ORDER BY rp2.id ASC LIMIT 1) AS recipe_photo_url FROM recipes r LEFT JOIN users u ON r.user_id = u.id LEFT JOIN admins a ON r.admin_id = a.id WHERE r.status = 'approved' ORDER BY r.id DESC;`, (err, results) => {
+        db.query(`SELECT r.id AS recipe_id, r.title AS recipe_name, u.username AS recipe_creator, a.username AS admin_name, (SELECT rp2.photo_url FROM recipe_photos rp2 WHERE rp2.recipe_id = r.id ORDER BY rp2.id ASC LIMIT 1) AS recipe_photo_url FROM recipes r LEFT JOIN users u ON r.user_id = u.id LEFT JOIN admins a ON r.admin_id = a.id WHERE r.status = 'approved' ORDER BY r.id DESC`, (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
+
+    static getRecipeprocess() {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT r.id AS recipe_id, r.title AS recipe_name, u.username AS recipe_creator, (SELECT rp2.photo_url FROM recipe_photos rp2 WHERE rp2.recipe_id = r.id ORDER BY rp2.id ASC LIMIT 1) AS recipe_photo_url FROM recipes r LEFT JOIN users u ON r.user_id = u.id WHERE r.status = 'process' ORDER BY r.id DESC`, (err, results) => {
             if (err) return reject(err)
             resolve(results)
         })
