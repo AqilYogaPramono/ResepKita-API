@@ -202,6 +202,14 @@ static dashboards(userId) {
     })
 }
 
+    static dashboardsAdmin() {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT (SELECT COUNT(*) FROM users) AS total_registered_users, (SELECT COUNT(*) FROM testimonials) AS total_testimonials, (SELECT COUNT(*) FROM recipes WHERE status = 'approved') AS total_approved_recipes, (SELECT COUNT(*) FROM recipes WHERE status = 'process') AS total_processing_recipes`, (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = recipeModel
