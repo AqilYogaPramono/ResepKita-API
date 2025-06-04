@@ -13,4 +13,14 @@ router.get('/admin/recipes_approved', verifyToken, authorize(['admin']), async (
     }
 })
 
+router.get('/admin/recipes_processing', verifyToken, authorize(['admin']), async (req, res, next) => {
+    try {
+        const respon = await recipeModel.getRecipeprocess()
+
+        res.status(200).json(respon)
+    } catch (e) {
+        res.status(500).json({ message: e.message })
+    }
+})
+
 module.exports = router
