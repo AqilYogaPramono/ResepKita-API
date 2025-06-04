@@ -252,6 +252,15 @@ static dashboards(userId) {
         })
         })
     }
+
+    static updateStatusRecipe(status, adminComment, adminId, recipeId) {
+        return new Promise((resolve, reject) => {
+        db.query(`UPDATE recipes SET status = ?, admin_comment = ?, admin_id = ? WHERE id = ?; `, [status, adminComment, adminId, recipeId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = recipeModel
