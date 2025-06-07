@@ -25,7 +25,7 @@ static dashboards(userId) {
 
     static getRecipeByTitle(userId, title) {
         return new Promise((resolve, reject) => {
-        db.query(`SELECT r.id, (SELECT photo_url FROM recipe_photos WHERE recipe_id = r.id LIMIT 1) AS recipe_photo, r.title, u.nickname, COUNT(t.id) AS total_testimonials, CASE WHEN f.user_id IS NOT NULL THEN 'TRUE' ELSE 'FALSE' END AS is_saved FROM recipes r JOIN users u ON r.user_id = u.id LEFT JOIN testimonials t ON t.recipe_id = r.id LEFT JOIN favorites f ON f.recipe_id = r.id WHERE r.status = 'approved' AND r.user_id != ? AND r.title COLLATE utf8mb4_0900_ai_ci LIKE CONCAT('%', ?, '%') GROUP BY r.id, r.title, u.nickname, f.user_id ORDER BY r.id DESC`, [userId, title], (err, results) => {
+        db.query(`SELECT r.id, (SELECT photo_url FROM recipe_photos WHERE recipe_id = r.id LIMIT 1) AS recipe_photo, r.title, u.id AS user_id, u.nickname, u.photo_profile, COUNT(t.id) AS total_testimonials, CASE WHEN f.user_id IS NOT NULL THEN 'TRUE' ELSE 'FALSE' END AS is_saved FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN testimonials AS t ON t.recipe_id = r.id LEFT JOIN favorites AS f ON f.recipe_id = r.id WHERE r.status = 'approved' AND r.user_id != ? AND r.title COLLATE utf8mb4_0900_ai_ci LIKE CONCAT('%', ?, '%') GROUP BY r.id, r.title, u.id, u.nickname, u.photo_profile, f.user_id ORDER BY r.id DESC`, [userId, title], (err, results) => {
             if (err) return reject(err)
             resolve(results)
         })
