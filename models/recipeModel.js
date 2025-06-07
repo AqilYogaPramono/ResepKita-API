@@ -3,7 +3,7 @@ const db = require('../configs/db')
 class recipeModel {
 static dashboards(userId) {
     return new Promise((resolve, reject) => {
-        db.query(`SELECT r.id, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', rp.photo_url, '"') ORDER BY rp.id), ']') AS recipe_photo, r.title, u.username, COUNT(DISTINCT t.id) AS total_testimonials, CASE WHEN f.user_id IS NOT NULL THEN 'TRUE' ELSE 'FALSE' END AS is_saved FROM recipes AS r LEFT JOIN recipe_photos AS rp ON r.id = rp.recipe_id JOIN users AS u ON r.user_id = u.id LEFT JOIN testimonials AS t ON r.id = t.recipe_id LEFT JOIN favorites AS f ON r.id = f.recipe_id WHERE r.status = 'approved' AND r.user_id != ? GROUP BY r.id, r.title, u.username, f.user_id ORDER BY RAND()`, [userId], (err, results) => {
+        db.query(`SELECT r.id, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', rp.photo_url, '"') ORDER BY rp.id), ']') AS recipe_photo, r.title, u.id AS user_id, u.nickname, u.photo_profile AS user_photo_profile, COUNT(DISTINCT t.id) AS total_testimonials, CASE WHEN f.user_id IS NOT NULL THEN 'TRUE' ELSE 'FALSE' END AS is_saved FROM recipes AS r LEFT JOIN recipe_photos AS rp ON r.id = rp.recipe_id JOIN users AS u ON r.user_id = u.id LEFT JOIN testimonials AS t ON r.id = t.recipe_id LEFT JOIN favorites AS f ON r.id = f.recipe_id WHERE r.status = 'approved' AND r.user_id != ? GROUP BY r.id, r.title, u.id, u.username, u.photo_profile, f.user_id ORDER BY RAND()`, [userId], (err, results) => {
             if (err) return reject(err)
             const formattedResults = results.map(row => ({
                 ...row,

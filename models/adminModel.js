@@ -20,6 +20,15 @@ class adminModel {
         })
         })
     }
+
+    static getUsernameAdmin(adminId) {
+        return new Promise((resolve, reject) => {
+        db.query(`SELECT username FROM admins WHERE id = ?`, [adminId], (err, results) => {
+            if (err) return reject(err)
+            resolve(results)
+        })
+        })
+    }
 }
 
 module.exports = adminModel
