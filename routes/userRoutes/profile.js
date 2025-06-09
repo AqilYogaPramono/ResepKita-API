@@ -140,7 +140,7 @@ router.patch('/user/profile/:profileId', verifyToken, authorize(['user']), uploa
             return res.status(400).json({ message: 'Username already exists.' })
         }
 
-        await userModel.updatePfofile(username, nickname, profile_photo, bio, userId)
+        await userModel.updateProfile(username, nickname, profile_photo, bio, userId)
 
         if (req.file) deleteOldPhoto(checkUserId[0].photo_profile)
         console.log(checkUserId[0].photo_profile)
