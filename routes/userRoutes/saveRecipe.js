@@ -14,10 +14,6 @@ router.get('/user/favorite_recipe', verifyToken, authorize(['user']), async (req
             return res.status(404).json({ message: 'User not found'})
         }
 
-        if (req.cacheHit && req.cachedData) {
-            return res.status(200).json({...req.cachedData, cache: 'Cache use' })
-        }
-
         let rows = await favoriteModel.getFavoriteRecipeById(userId)
 
         res.status(200).json(rows)
