@@ -74,7 +74,7 @@ class userModel {
 
     static profileUserById(profileId) {
         return new Promise((resolve, reject) => {
-        db.query(`SELECT u.photo_profile, u.username, u.nickname, u.bio, ( SELECT COUNT(*) FROM testimonials t JOIN recipes r ON t.recipe_id = r.id WHERE r.user_id = u.id ) AS total_testimonials, ( SELECT COUNT(*) FROM recipes r WHERE r.user_id = u.id AND r.status = 'approved' ) AS total_recipes_published FROM users u WHERE u.id = ?`, [profileId], (err, results) => {
+        db.query(`SELECT u.id, u.photo_profile, u.username, u.nickname, u.bio, ( SELECT COUNT(*) FROM testimonials t JOIN recipes r ON t.recipe_id = r.id WHERE r.user_id = u.id ) AS total_testimonials, ( SELECT COUNT(*) FROM recipes r WHERE r.user_id = u.id AND r.status = 'approved' ) AS total_recipes_published FROM users u WHERE u.id = ?`, [profileId], (err, results) => {
             if (err) return reject(err)
             resolve(results)
         })
@@ -99,9 +99,9 @@ class userModel {
         })
     }
 
-    static recipePublish(profileId) {
+    static recipePublish(userId, profileId) {
         return new Promise((resolve, reject) => {
-        db.query(`SELECT r.id, (SELECT photo_url FROM recipe_photos WHERE recipe_id = r.id LIMIT 1) AS recipe_photo, u.id AS user_id, u.nickname, u.photo_profile, r.title, COUNT(t.id) AS total_testimonials, IF(f.recipe_id IS NOT NULL, 'true', 'false') AS is_saved FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN testimonials AS t ON t.recipe_id = r.id LEFT JOIN favorites AS f ON f.recipe_id = r.id AND f.user_id = ? WHERE r.status = 'approved' AND r.user_id = ? GROUP BY r.id, u.id, u.nickname, u.photo_profile, r.title, f.recipe_id ORDER BY r.id DESC`, [profileId, profileId], (err, results) => {
+        db.query(`SELECT r.id, (SELECT photo_url FROM recipe_photos WHERE recipe_id = r.id LIMIT 1) AS recipe_photo, u.id AS user_id, u.nickname, u.photo_profile, r.title, COUNT(t.id) AS total_testimonials, IF(f.recipe_id IS NOT NULL, 'true', 'false') AS is_saved FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN testimonials AS t ON t.recipe_id = r.id LEFT JOIN favorites AS f ON f.recipe_id = r.id AND f.user_id = ? WHERE r.status = 'approved' AND r.user_id = ? GROUP BY r.id, u.id, u.nickname, u.photo_profile, r.title, f.recipe_id ORDER BY r.id DESC`, [userId, profileId], (err, results) => {
             if (err) return reject(err)
             resolve(results)
         })

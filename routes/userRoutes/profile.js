@@ -71,7 +71,7 @@ router.get('/user/profile/:profileId', verifyToken, authorize(['user']), async (
         const profile = await userModel.profileUserById(profileId)
         const recipeProcess = await userModel.recipeProcess(profileId)
         const recipeReject = await userModel.recipeReject(profileId)
-        const recipePublish = await userModel.recipePublish(profileId)
+        const recipePublish = await userModel.recipePublish(userId, profileId)
         if (profileId == userId) {
             responseObject ={profile, recipePublish, recipeProcess, recipeReject, is_owner: true}
         } else if (profileId != userId) {
