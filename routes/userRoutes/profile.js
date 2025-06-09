@@ -53,7 +53,7 @@ const deleteOldPhoto = (oldPhotoFilename) => {
     }
 }
 
-router.get('/user/profile/:profileId', verifyToken, authorize(['user']), cacheMiddleware, async (req, res, next) => {
+router.get('/user/profile/:profileId', verifyToken, authorize(['user']), async (req, res, next) => {
     const userId = req.user.id
     const {profileId} = req.params
 
@@ -69,22 +69,16 @@ router.get('/user/profile/:profileId', verifyToken, authorize(['user']), cacheMi
         }
 
         const profile = await userModel.profileUserById(profileId)
-        const recipePublishToOwner = await userModel.recipePublishToOwner(profileId)
-        const recipeUnPublishToOwner = await userModel.recipeUnPublishToOwner(profileId)
-        const recipePublishToUser = await userModel.recipePublishToUser(profileId)
+        const recipeProcess = await userModel.recipeProcess(profileId)
+        const recipeReject = await userModel.recipeReject(profileId)
+        const recipePublish = await userModel.recipePublish(profileId)
         if (profileId == userId) {
-            responseObject ={profile, recipePublishToOwner, recipeUnPublishToOwner}
+            responseObject ={profile, recipePublish, recipeProcess, recipeReject, is_owner: true}
         } else if (profileId != userId) {
-            responseObject ={profile, recipePublishToUser}
+            responseObject ={profile, recipePublish, is_owner: false}
         }
 
-        if (req.cacheHit && req.cachedData) {
-            return res.status(200).json({...req.cachedData, cache: 'Cache use' })
-        }
-
-        const respon = { ...responseObject, cache: 'Cache not use' }
-        myCache.set(req.originalUrl, respon)
-        res.status(200).json(respon)
+        res.status(200).json(responseObject)
     } catch (e) {
         res.status(500).json({ message: e.message })
     }

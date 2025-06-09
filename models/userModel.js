@@ -81,27 +81,27 @@ class userModel {
         })
     }
 
-    static recipePublishToOwner(profileId) {
+    static recipeProcess(profileId) {
         return new Promise((resolve, reject) => {
-        db.query(`SELECT r.id, (SELECT photo_url FROM recipe_photos WHERE recipe_id = r.id LIMIT 1) AS recipe_photo, u.username, r.title, COUNT(t.id) AS total_testimonials FROM recipes r JOIN users u ON r.user_id = u.id LEFT JOIN testimonials t ON t.recipe_id = r.id WHERE r.status = 'approved' AND r.user_id = ? GROUP BY r.id, u.username, r.title ORDER BY r.id DESC`, [profileId], (err, results) => {
+        db.query(`SELECT r.id AS recipe_id, (SELECT photo_url FROM recipe_photos WHERE recipe_id = r.id LIMIT 1) AS recipe_photo, u.id AS user_id, u.nickname, u.photo_profile, r.title AS recipe_name FROM recipes r JOIN users u ON r.user_id = u.id WHERE r.status = 'process' AND r.user_id = ? ORDER BY r.id DESC`, [profileId], (err, results) => {
             if (err) return reject(err)
             resolve(results)
         })
         })
     }
 
-    static recipeUnPublishToOwner(profileId) {
+    static recipeReject(profileId) {
         return new Promise((resolve, reject) => {
-        db.query(`SELECT r.id AS recipe_id, ( SELECT photo_url FROM recipe_photos WHERE recipe_id = r.id LIMIT 1 ) AS recipe_photo, u.username, r.title AS recipe_name FROM recipes r JOIN users u ON r.user_id = u.id WHERE r.status != 'approved' AND r.user_id = ? ORDER BY r.id DESC;`, [profileId], (err, results) => {
+        db.query(`SELECT r.id AS recipe_id, (SELECT photo_url FROM recipe_photos WHERE recipe_id = r.id LIMIT 1) AS recipe_photo, u.id AS user_id, u.nickname, u.photo_profile, r.title AS recipe_name FROM recipes r JOIN users u ON r.user_id = u.id WHERE r.status = 'rejected' AND r.user_id = ? ORDER BY r.id DESC`, [profileId], (err, results) => {
             if (err) return reject(err)
             resolve(results)
         })
         })
     }
 
-    static recipePublishToUser(profileId) {
+    static recipePublish(profileId) {
         return new Promise((resolve, reject) => {
-        db.query(`SELECT r.id, (SELECT photo_url FROM recipe_photos WHERE recipe_id = r.id LIMIT 1) AS recipe_photo, u.username, r.title, COUNT(t.id) AS total_testimonials, IF(f.recipe_id IS NOT NULL, 'TRUE', 'FALSE') AS is_saved FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN testimonials AS t ON t.recipe_id = r.id LEFT JOIN favorites AS f ON f.recipe_id = r.id AND f.user_id = u.id WHERE r.status = 'approved' AND r.user_id = ? GROUP BY r.id, u.username, r.title, f.recipe_id ORDER BY r.id DESC`, [profileId], (err, results) => {
+        db.query(`SELECT r.id, (SELECT photo_url FROM recipe_photos WHERE recipe_id = r.id LIMIT 1) AS recipe_photo, u.id AS user_id, u.nickname, u.photo_profile, r.title, COUNT(t.id) AS total_testimonials, IF(f.recipe_id IS NOT NULL, 'true', 'false') AS is_saved FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN testimonials AS t ON t.recipe_id = r.id LEFT JOIN favorites AS f ON f.recipe_id = r.id AND f.user_id = ? WHERE r.status = 'approved' AND r.user_id = ? GROUP BY r.id, u.id, u.nickname, u.photo_profile, r.title, f.recipe_id ORDER BY r.id DESC`, [profileId, profileId], (err, results) => {
             if (err) return reject(err)
             resolve(results)
         })
