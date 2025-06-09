@@ -120,8 +120,9 @@ router.get('/user/:recipeId/testimoni', verifyToken, authorize(['user']), async 
 
         const getTestimoniByUser = await testimonialModel.getTestimoniByUserId(recipeId, userId)
         const getAllTestimoni = await testimonialModel.getAllTestimoni(recipeId, userId)
+        const countTestimoni = await testimonialModel.countTestimoniByIdRecipe(recipeId)
 
-        res.status(200).json({getTestimoniByUser, getAllTestimoni})
+        res.status(200).json({countTestimoni, getTestimoniByUser, getAllTestimoni})
     } catch (e) {
         res.status(500).json({ message: e.message })
     }
