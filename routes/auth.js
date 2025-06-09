@@ -129,7 +129,7 @@ router.post('/register', upload.single('profile_photo'), async (req, res) => {
     }
     })
 
-    router.post('/login', limiter, async (req, res) => {
+    router.post('/login', async (req, res) => {
     const { email, password } = req.body
     if (!email)
         return res.status(400).json({ message: 'Email is required.' })

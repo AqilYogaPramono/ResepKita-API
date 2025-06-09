@@ -43,7 +43,7 @@ static dashboards(userId) {
 
     static getDetailRecipeById(userId, recipeId) {
         return new Promise((resolve, reject) => {
-            db.query(`SELECT r.id AS recipe_id, u.username AS recipe_creator_username, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', rp.photo_url, '"') ORDER BY rp.id), ']') AS recipe_photo, r.title AS recipe_name, r.description AS recipe_bio, r.cooking_time, r.portion AS total_portions, ( SELECT JSON_ARRAYAGG(ing.name) FROM ingredients AS ing WHERE ing.recipe_id = r.id ) AS ingredients, ( SELECT JSON_ARRAYAGG( JSON_OBJECT( 'introduction', ins.step_description, 'instruction_photos', ( SELECT JSON_ARRAYAGG(ip.photo_url) FROM instruction_photos AS ip WHERE ip.instruction_id = ins.id ) ) ) FROM instructions AS ins WHERE ins.recipe_id = r.id ) AS all_instructions, CASE WHEN EXISTS (SELECT 1 FROM favorites WHERE user_id = ? AND recipe_id = r.id) THEN 'TRUE' ELSE 'FALSE' END AS is_save FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN recipe_photos AS rp ON r.id = rp.recipe_id WHERE r.id = ? AND r.status = 'approved' GROUP BY r.id, u.username, r.title, r.description, r.cooking_time, r.portion`, [userId, recipeId], (err, results) => {
+            db.query(`SELECT r.id AS recipe_id, u.id AS user_id, u.nickname AS recipe_creator_username, u.photo_profile, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', rp.photo_url, '"') ORDER BY rp.id), ']') AS recipe_photo, r.title AS recipe_name, r.description AS recipe_bio, r.cooking_time, r.portion AS total_portions, (SELECT JSON_ARRAYAGG(ing.name) FROM ingredients AS ing WHERE ing.recipe_id = r.id) AS ingredients, (SELECT JSON_ARRAYAGG(JSON_OBJECT('introduction', ins.step_description, 'instruction_photos', (SELECT JSON_ARRAYAGG(ip.photo_url) FROM instruction_photos AS ip WHERE ip.instruction_id = ins.id))) FROM instructions AS ins WHERE ins.recipe_id = r.id) AS all_instructions, CASE WHEN EXISTS (SELECT 1 FROM favorites WHERE user_id = ? AND recipe_id = r.id) THEN 'TRUE' ELSE 'FALSE' END AS is_save, (SELECT COUNT(*) FROM testimonials WHERE recipe_id = r.id) AS total_testimonials FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN recipe_photos AS rp ON r.id = rp.recipe_id WHERE r.id = ? AND r.status = 'approved' GROUP BY r.id, u.id, u.nickname, u.photo_profile, r.title, r.description, r.cooking_time, r.portion`, [userId, recipeId], (err, results) => {
                 if (err) return reject(err)
                 const formattedResults = results.map(row => ({
                     ...row,
@@ -74,14 +74,19 @@ static dashboards(userId) {
         })
     }
 
-    static getTetstimonial(recipeId, userId) {
-        return new Promise((resolve, reject) => {
-        db.query(`SELECT COUNT(t.id) OVER() AS total_testimonials_count, u.photo_profile, u.username, t.comment FROM testimonials AS t JOIN users AS u ON t.user_id = u.id WHERE t.recipe_id = ? AND t.user_id != ? ORDER BY RAND() LIMIT 3`, [recipeId, userId], (err, results) => {
+static getTetstimonial(recipeId, userId) {
+    return new Promise((resolve, reject) => {
+        db.query(`SELECT u.id AS user_id, u.nickname, u.photo_profile, t.comment, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', tp.photo_url, '"')), ']') AS photo_testimonial FROM testimonials AS t JOIN users AS u ON t.user_id = u.id LEFT JOIN testimonial_photos AS tp ON t.id = tp.testimonial_id WHERE t.recipe_id = ? AND t.user_id != ? GROUP BY t.id, u.id, u.nickname, u.photo_profile, t.comment ORDER BY RAND() LIMIT 3`, [recipeId, userId], (err, results) => {
             if (err) return reject(err)
-            resolve(results)
+            const formattedResults = results.map(row => ({
+                ...row,
+                photo_testimonial: JSON.parse(row.photo_testimonial || '[]')
+            }))
+            resolve(formattedResults)
         })
-        })
-    }
+    })
+}
+
 
     static createRecipe(userId, title, description, portion, cookingTime, status, ingredients, instructions, recipePhotos, instructionPhotos) {
         return new Promise((resolve, reject) => {

@@ -77,7 +77,7 @@ router.get('/user/:recipeId/detail_recipe', verifyToken, authorize(['user']), as
         }
         
 
-        const detailRecipe = await recipeModel.getDetailRecipeById(userId, userId, recipeId)
+        const detailRecipe = await recipeModel.getDetailRecipeById(userId, recipeId)
         const checkOwnerRecipe = await recipeModel.checkOwnerRecipe(userId, recipeId)
         const checkCanTestimoni = await recipeModel.checkCanTestimoni(userId, recipeId)
         const testimonials = await recipeModel.getTetstimonial(recipeId, userId)
