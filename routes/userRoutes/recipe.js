@@ -93,9 +93,16 @@ router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadField
 
     let ingredients = req.body.ingredients
     let instructions = req.body.instructions
+    let newInstructionPhotoCounts = req.body.newInstructionPhotoCounts
+
+    // Parse jika string
+    if (typeof ingredients === 'string') try { ingredients = JSON.parse(ingredients); } catch {}
+    if (typeof instructions === 'string') try { instructions = JSON.parse(instructions); } catch {}
+    if (typeof newInstructionPhotoCounts === 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts); } catch {}
 
     if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
     if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
+    if (!Array.isArray(newInstructionPhotoCounts)) newInstructionPhotoCounts = newInstructionPhotoCounts ? [newInstructionPhotoCounts] : []
 
     try {
         const userCheck = await userModel.getUserById(userId)
@@ -105,8 +112,6 @@ router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadField
         }
 
         const recipePhotos = req.files.recipePhotos ? req.files.recipePhotos.map(file => file.filename) : []
-        const instructionPhotos = req.files.instructionPhotos ? req.files.instructionPhotos.map(file => file.filename) : []
-
         if (recipePhotos.length > 3) {
             deleteUploadedFiles(req.files)
             return res.status(404).json({ message: 'Maximum 3 recipe photos are allowed.' })
@@ -117,7 +122,18 @@ router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadField
             return res.status(404).json({ message: 'Please check status' })
         }
 
-        await recipeModel.createRecipe(userId, title, description, portion, cookingTime, status, ingredients, instructions, recipePhotos, instructionPhotos)
+        // --- Mapping foto instruksi baru ke langkah ---
+        const newInstructionPhotos = req.files.instructionPhotos ? req.files.instructionPhotos.map(file => file.filename) : [];
+        let photoIdx = 0;
+        for (let i = 0; i < instructions.length; i++) {
+            const count = newInstructionPhotoCounts[i] || 0;
+            const newPhotosForStep = newInstructionPhotos.slice(photoIdx, photoIdx + count);
+            photoIdx += count;
+            // Gabungkan foto baru untuk langkah ini
+            instructions[i].photos = [...newPhotosForStep];
+        }
+
+        await recipeModel.createRecipe(userId, title, description, portion, cookingTime, status, ingredients, instructions, recipePhotos)
 
         res.status(201).json({ message: 'OK' })
     } catch (error) {
@@ -133,9 +149,22 @@ router.patch('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), up
 
     let ingredients = req.body.ingredients
     let instructions = req.body.instructions
+    let oldRecipePhotos = req.body.oldRecipePhotos
+    let oldInstructionPhotos = req.body.oldInstructionPhotos
+    let newInstructionPhotoCounts = req.body.newInstructionPhotoCounts
+
+    // Parse JSON strings if needed
+    if (typeof ingredients === 'string') try { ingredients = JSON.parse(ingredients); } catch {}
+    if (typeof instructions === 'string') try { instructions = JSON.parse(instructions); } catch {}
+    if (typeof oldRecipePhotos === 'string') try { oldRecipePhotos = JSON.parse(oldRecipePhotos); } catch {}
+    if (typeof oldInstructionPhotos === 'string') try { oldInstructionPhotos = JSON.parse(oldInstructionPhotos); } catch {}
+    if (typeof newInstructionPhotoCounts === 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts); } catch {}
 
     if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
     if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
+    if (!Array.isArray(oldRecipePhotos)) oldRecipePhotos = oldRecipePhotos ? [oldRecipePhotos] : []
+    if (!Array.isArray(oldInstructionPhotos)) oldInstructionPhotos = oldInstructionPhotos ? [oldInstructionPhotos] : []
+    if (!Array.isArray(newInstructionPhotoCounts)) newInstructionPhotoCounts = newInstructionPhotoCounts ? [newInstructionPhotoCounts] : []
 
     try {
         const recipeData = await recipeModel.getRecipeByIdAndUser(recipeId, userId)
@@ -144,35 +173,84 @@ router.patch('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), up
             return res.status(404).json({ message: 'Recipe not found' })
         }
 
-        const oldRecipePhotos = await recipeModel.getRecipePhotos(recipeId)
-        oldRecipePhotos.forEach(row => {
-            deleteOldPhoto(row.photo_url)
-        })
+        // Get all existing photos
+        const allOldRecipePhotos = await recipeModel.getRecipePhotos(recipeId);
+        const allOldInstructionPhotos = await recipeModel.getInstructionPhotos(recipeId);
 
-        const oldInstructionPhotos = await recipeModel.getInstructionPhotos(recipeId)
-        oldInstructionPhotos.forEach(row => {
-            deleteOldPhoto(row.photo_url)
-        })
+        // Delete photos that are not in oldRecipePhotos
+        allOldRecipePhotos.forEach(row => {
+            if (!oldRecipePhotos.includes(row.photo_url)) {
+                deleteOldPhoto(row.photo_url);
+            }
+        });
 
-        const newRecipePhotos = req.files.recipePhotos ? req.files.recipePhotos.map(file => file.filename) : []
-        const newInstructionPhotos = req.files.instructionPhotos ? req.files.instructionPhotos.map(file => file.filename) : []
+        // Delete instruction photos that are not in oldInstructionPhotos
+        allOldInstructionPhotos.forEach(row => {
+            if (!oldInstructionPhotos.includes(row.photo_url)) {
+                deleteOldPhoto(row.photo_url);
+            }
+        });
 
-        if (newRecipePhotos.length > 3) {
-            deleteUploadedFiles(req.files)
-            return res.status(404).json({ message: 'Maximum 3 recipe photos are allowed.' })
+        // Handle new recipe photos
+        const newRecipePhotos = req.files.recipePhotos ? req.files.recipePhotos.map(file => file.filename) : [];
+        const finalRecipePhotos = [...oldRecipePhotos, ...newRecipePhotos];
+
+        // --- Mapping foto instruksi baru ke langkah ---
+        const newInstructionPhotos = req.files.instructionPhotos ? req.files.instructionPhotos.map(file => file.filename) : [];
+        let photoIdx = 0;
+        for (let i = 0; i < instructions.length; i++) {
+            const count = newInstructionPhotoCounts[i] || 0;
+            const newPhotosForStep = newInstructionPhotos.slice(photoIdx, photoIdx + count);
+            photoIdx += count;
+            // Gabungkan foto lama dan baru untuk langkah ini
+            instructions[i].photos = [...(instructions[i].photos || []), ...newPhotosForStep];
         }
 
-        if (status != 'process' && status != 'rejected') {
-            deleteUploadedFiles(req.files)
-            return res.status(404).json({ message: 'Please check status' })
+        if (finalRecipePhotos.length > 3) {
+            deleteUploadedFiles(req.files);
+            return res.status(400).json({ message: 'Maximum 3 recipe photos are allowed.' });
         }
 
-        await recipeModel.updateRecipe(recipeId, title, description, portion, cookingTime, status, ingredients, instructions, newRecipePhotos, newInstructionPhotos )
+        if (status !== 'process' && status !== 'rejected') {
+            deleteUploadedFiles(req.files);
+            return res.status(400).json({ message: 'Invalid status' });
+        }
 
-        res.status(200).json({ message: 'OK' })
+        // Update recipe with all data
+        await recipeModel.updateRecipe(
+            recipeId, 
+            title, 
+            description, 
+            portion, 
+            cookingTime, 
+            status, 
+            ingredients, 
+            instructions, 
+            finalRecipePhotos, // Pass all photos (old + new)
+            oldInstructionPhotos
+        );
+
+        res.status(200).json({ message: 'OK' });
     } catch (error) {
         deleteUploadedFiles(req.files)
         res.status(500).json({ message: error.message })
+    }
+})
+
+router.get('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), async (req, res, next) => {
+    const userId = req.user.id
+    const {recipeId} = req.params
+
+    try {
+        const checkRecipeId = await recipeModel.getRecipeById(recipeId)
+        if (checkRecipeId.length == 0) {
+            return res.status(403).json({ message: 'Recipe not found'})
+        }
+
+        const adminComment = await recipeModel.getAdminCommentByIdRecipe(recipeId)
+        res.status(200).json({adminComment})
+    } catch (e) {
+        res.status(500).json({ message: e.message })
     }
 })
 

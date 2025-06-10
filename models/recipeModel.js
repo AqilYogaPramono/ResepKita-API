@@ -43,7 +43,7 @@ static dashboards(userId) {
 
     static getDetailRecipeById(userId, recipeId) {
         return new Promise((resolve, reject) => {
-            db.query(`SELECT r.id AS recipe_id, u.id AS user_id, u.nickname AS recipe_creator_username, u.photo_profile, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', rp.photo_url, '"') ORDER BY rp.id), ']') AS recipe_photo, r.title AS recipe_name, r.description AS recipe_bio, r.cooking_time, r.portion AS total_portions, (SELECT JSON_ARRAYAGG(ing.name) FROM ingredients AS ing WHERE ing.recipe_id = r.id) AS ingredients, (SELECT JSON_ARRAYAGG(JSON_OBJECT('introduction', ins.step_description, 'instruction_photos', (SELECT JSON_ARRAYAGG(ip.photo_url) FROM instruction_photos AS ip WHERE ip.instruction_id = ins.id))) FROM instructions AS ins WHERE ins.recipe_id = r.id) AS all_instructions, CASE WHEN EXISTS (SELECT 1 FROM favorites WHERE user_id = ? AND recipe_id = r.id) THEN 'TRUE' ELSE 'FALSE' END AS is_save, (SELECT COUNT(*) FROM testimonials WHERE recipe_id = r.id) AS total_testimonials FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN recipe_photos AS rp ON r.id = rp.recipe_id WHERE r.id = ? AND r.status = 'approved' GROUP BY r.id, u.id, u.nickname, u.photo_profile, r.title, r.description, r.cooking_time, r.portion`, [userId, recipeId], (err, results) => {
+            db.query(`SELECT r.id AS recipe_id, u.id AS user_id, u.nickname AS recipe_creator_username, u.photo_profile, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', rp.photo_url, '"') ORDER BY rp.id), ']') AS recipe_photo, r.title AS recipe_name, r.description AS recipe_bio, r.cooking_time, r.portion AS total_portions, (SELECT JSON_ARRAYAGG(ing.name) FROM ingredients AS ing WHERE ing.recipe_id = r.id) AS ingredients, (SELECT JSON_ARRAYAGG(JSON_OBJECT('introduction', ins.step_description, 'instruction_photos', (SELECT JSON_ARRAYAGG(ip.photo_url) FROM instruction_photos AS ip WHERE ip.instruction_id = ins.id))) FROM instructions AS ins WHERE ins.recipe_id = r.id) AS all_instructions, CASE WHEN EXISTS (SELECT 1 FROM favorites WHERE user_id = ? AND recipe_id = r.id) THEN 'TRUE' ELSE 'FALSE' END AS is_save, (SELECT COUNT(*) FROM testimonials WHERE recipe_id = r.id) AS total_testimonials FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN recipe_photos AS rp ON r.id = rp.recipe_id WHERE r.id = ? GROUP BY r.id, u.id, u.nickname, u.photo_profile, r.title, r.description, r.cooking_time, r.portion`, [userId, recipeId], (err, results) => {
                 if (err) return reject(err)
                 const formattedResults = results.map(row => ({
                     ...row,
@@ -88,46 +88,66 @@ static getTetstimonial(recipeId, userId) {
 }
 
 
-    static createRecipe(userId, title, description, portion, cookingTime, status, ingredients, instructions, recipePhotos, instructionPhotos) {
-        return new Promise((resolve, reject) => {
+    static async createRecipe(userId, title, description, portion, cookingTime, status, ingredients, instructions, recipePhotos) {
+        return new Promise(async (resolve, reject) => {
             db.query(`INSERT INTO recipes (user_id, title, description, portion, cooking_time, status) VALUES (?, ?, ?, ?, ?, ?)`, [userId, title, description, portion, cookingTime, status],
-                (err, recipeResult) => {
+                async (err, recipeResult) => {
                     if (err) return reject(err)
 
                     const recipeId = recipeResult.insertId
 
-                    for (const item of ingredients) {
-                        db.query(`INSERT INTO ingredients (recipe_id, name) VALUES (?, ?)`, [recipeId, item], () => {})
+                    // Insert all ingredients
+                    if (Array.isArray(ingredients)) {
+                        for (const item of ingredients) {
+                            await new Promise((res) => {
+                                db.query(`INSERT INTO ingredients (recipe_id, name) VALUES (?, ?)`, [recipeId, item], () => res())
+                            })
+                        }
                     }
 
-                    for (let i = 0; i < instructions.length; i++) {
-                        db.query(`INSERT INTO instructions (recipe_id, step_description) VALUES (?, ?)`, [recipeId, instructions[i]],
-                            (err, instructionResult) => {
-                                if (instructionPhotos[i]) {
-                                    db.query(`INSERT INTO instruction_photos (instruction_id, photo_url) VALUES (?, ?)`, [instructionResult.insertId, instructionPhotos[i]], () => {}
-                                )
-                            }
+                    // Insert instructions and their photos (sync)
+                    if (Array.isArray(instructions)) {
+                        for (let i = 0; i < instructions.length; i++) {
+                            const desc = instructions[i].desc || instructions[i];
+                            await new Promise((res) => {
+                                db.query(`INSERT INTO instructions (recipe_id, step_description) VALUES (?, ?)`, [recipeId, desc], async (err, instructionResult) => {
+                                    if (err) return res();
+                                    if (instructions[i].photos && Array.isArray(instructions[i].photos)) {
+                                        for (const photo of instructions[i].photos) {
+                                            await new Promise((res2) => {
+                                                db.query(`INSERT INTO instruction_photos (instruction_id, photo_url) VALUES (?, ?)`, [instructionResult.insertId, photo], () => res2())
+                                            })
+                                        }
+                                    }
+                                    res();
+                                })
+                            })
                         }
-                    )
+                    }
+
+                    // Insert recipe photos
+                    if (Array.isArray(recipePhotos)) {
+                        for (const photo of recipePhotos) {
+                            await new Promise((res) => {
+                                db.query(`INSERT INTO recipe_photos (recipe_id, photo_url) VALUES (?, ?)`, [recipeId, photo], () => res())
+                            })
+                        }
+                    }
+
+                    resolve()
                 }
+            )
+        })
+    }
 
-                for (const photo of recipePhotos) {
-                    db.query(`INSERT INTO recipe_photos (recipe_id, photo_url) VALUES (?, ?)`, [recipeId, photo], () => {})
-                }
-
-                resolve()
-            }
-        )
-    })
-}
-
-    static updateRecipe(recipeId, title, description, portion, cookingTime, status, ingredients, instructions, recipePhotos, instructionPhotos) {
+    static updateRecipe(recipeId, title, description, portion, cookingTime, status, ingredients, instructions, recipePhotos, oldInstructionPhotos) {
         return new Promise((resolve, reject) => {
-
-            db.query(`UPDATE recipes SET title = ?, description = ?, portion = ?, cooking_time = ?, status = ? WHERE id = ?`, [title, description, portion, cookingTime, status, recipeId],
+            db.query(`UPDATE recipes SET title = ?, description = ?, portion = ?, cooking_time = ?, status = ? WHERE id = ?`, 
+                [title, description, portion, cookingTime, status, recipeId],
                 (err, result) => {
                     if (err) return reject(err)
 
+                    // Delete all existing data
                     db.query(`DELETE FROM ingredients WHERE recipe_id = ?`, [recipeId], (err) => {
                         if (err) console.error('Error deleting ingredients:', err)
                     })
@@ -138,37 +158,50 @@ static getTetstimonial(recipeId, userId) {
                         if (err) console.error('Error deleting recipe photos:', err)
                     })
 
+                    // Insert ingredients
                     for (const item of ingredients) {
-                        db.query(`INSERT INTO ingredients (recipe_id, name) VALUES (?, ?)`, [recipeId, item], (err) => {
-                            if (err) console.error('Error inserting ingredient:', err)
-                        })
+                        db.query(`INSERT INTO ingredients (recipe_id, name) VALUES (?, ?)`, 
+                            [recipeId, item], 
+                            (err) => {
+                                if (err) console.error('Error inserting ingredient:', err)
+                            }
+                        )
                     }
 
+                    // Insert instructions and their photos (photos sudah gabungan lama+baru)
                     for (let i = 0; i < instructions.length; i++) {
-                        db.query(`INSERT INTO instructions (recipe_id, step_description) VALUES (?, ?)`,[recipeId, instructions[i]],
+                        const desc = instructions[i].desc || instructions[i];
+                        db.query(`INSERT INTO instructions (recipe_id, step_description) VALUES (?, ?)`,
+                            [recipeId, desc],
                             (err, instructionResult) => {
                                 if (err) {
                                     console.error('Error inserting instruction:', err)
                                     return
                                 }
-                                if (instructionPhotos[i]) {
-                                    db.query(`INSERT INTO instruction_photos (instruction_id, photo_url) VALUES (?, ?)`, [instructionResult.insertId, instructionPhotos[i]],
-                                        (err) => {
-                                            if (err) console.error('Error inserting instruction photo:', err)
-                                        }
-                                    )
+                                if (instructions[i].photos && Array.isArray(instructions[i].photos)) {
+                                    for (const photo of instructions[i].photos) {
+                                        db.query(`INSERT INTO instruction_photos (instruction_id, photo_url) VALUES (?, ?)`, 
+                                            [instructionResult.insertId, photo],
+                                            (err) => {
+                                                if (err) console.error('Error inserting instruction photo:', err)
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         )
                     }
 
+                    // Insert recipe photos
                     for (const photo of recipePhotos) {
-                        db.query(`INSERT INTO recipe_photos (recipe_id, photo_url) VALUES (?, ?)`, [recipeId, photo],
+                        db.query(`INSERT INTO recipe_photos (recipe_id, photo_url) VALUES (?, ?)`, 
+                            [recipeId, photo],
                             (err) => {
                                 if (err) console.error('Error inserting recipe photo:', err)
                             }
                         )
                     }
+
                     resolve()
                 }
             )
@@ -237,6 +270,21 @@ static getTetstimonial(recipeId, userId) {
     static getDetailRecipeApprovedById(recipeId) {
         return new Promise((resolve, reject) => {
             db.query(`SELECT r.id AS recipe_id, u.username AS recipe_creator_username, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', rp.photo_url, '"') ORDER BY rp.id), ']') AS recipe_photo, r.title AS recipe_name, r.description AS recipe_bio, r.cooking_time, r.portion AS total_portions, ( SELECT JSON_ARRAYAGG(ing.name) FROM ingredients AS ing WHERE ing.recipe_id = r.id ) AS ingredients, ( SELECT JSON_ARRAYAGG( JSON_OBJECT( 'introduction', ins.step_description, 'instruction_photos', ( SELECT JSON_ARRAYAGG(ip.photo_url) FROM instruction_photos AS ip WHERE ip.instruction_id = ins.id ) ) ) FROM instructions AS ins WHERE ins.recipe_id = r.id ) AS all_instructions FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN recipe_photos AS rp ON r.id = rp.recipe_id WHERE r.id = ? AND r.status = 'approved' GROUP BY r.id, u.username, r.title, r.description, r.cooking_time, r.portion`, [recipeId], (err, results) => {
+                if (err) return reject(err)
+                const formattedResults = results.map(row => ({
+                    ...row,
+                    recipe_photo: JSON.parse(row.recipe_photo || '[]'),
+                    ingredients: JSON.parse(row.ingredients || '[]'),
+                    all_instructions: JSON.parse(row.all_instructions || '[]')
+                }))
+                resolve(formattedResults)
+            })
+        })
+    }
+
+    static getDetailRecipeProcessById(recipeId) {
+        return new Promise((resolve, reject) => {
+            db.query(`SELECT r.id AS recipe_id, u.username AS recipe_creator_username, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', rp.photo_url, '"') ORDER BY rp.id), ']') AS recipe_photo, r.title AS recipe_name, r.description AS recipe_bio, r.cooking_time, r.portion AS total_portions, ( SELECT JSON_ARRAYAGG(ing.name) FROM ingredients AS ing WHERE ing.recipe_id = r.id ) AS ingredients, ( SELECT JSON_ARRAYAGG( JSON_OBJECT( 'introduction', ins.step_description, 'instruction_photos', ( SELECT JSON_ARRAYAGG(ip.photo_url) FROM instruction_photos AS ip WHERE ip.instruction_id = ins.id ) ) ) FROM instructions AS ins WHERE ins.recipe_id = r.id ) AS all_instructions FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN recipe_photos AS rp ON r.id = rp.recipe_id WHERE r.id = ? AND r.status = 'process' GROUP BY r.id, u.username, r.title, r.description, r.cooking_time, r.portion`, [recipeId], (err, results) => {
                 if (err) return reject(err)
                 const formattedResults = results.map(row => ({
                     ...row,

@@ -23,7 +23,7 @@ router.get('/admin/recipes_processing/:recipeId', verifyToken, authorize(['admin
         const statusRecipe = await recipeModel.getRecipeById(recipeId)
         if (statusRecipe[0].status == 'approved') return res.status(403).json({ message: 'Recipe status is publish'})
         
-        const detailRecipe = await recipeModel.getDetailRecipeApprovedById(recipeId)
+        const detailRecipe = await recipeModel.getDetailRecipeProcessById(recipeId)
         res.status(200).json({detailRecipe})
     } catch (e) {
         res.status(500).json({ message: e.message })
