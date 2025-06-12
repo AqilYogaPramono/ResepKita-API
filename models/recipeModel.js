@@ -96,7 +96,6 @@ static getTetstimonial(recipeId, userId) {
 
                     const recipeId = recipeResult.insertId
 
-                    // Insert all ingredients
                     if (Array.isArray(ingredients)) {
                         for (const item of ingredients) {
                             await new Promise((res) => {
@@ -105,7 +104,6 @@ static getTetstimonial(recipeId, userId) {
                         }
                     }
 
-                    // Insert instructions and their photos (sync)
                     if (Array.isArray(instructions)) {
                         for (let i = 0; i < instructions.length; i++) {
                             const desc = instructions[i].desc || instructions[i];
@@ -125,7 +123,6 @@ static getTetstimonial(recipeId, userId) {
                         }
                     }
 
-                    // Insert recipe photos
                     if (Array.isArray(recipePhotos)) {
                         for (const photo of recipePhotos) {
                             await new Promise((res) => {
@@ -147,7 +144,6 @@ static getTetstimonial(recipeId, userId) {
                 (err, result) => {
                     if (err) return reject(err)
 
-                    // Delete all existing data
                     db.query(`DELETE FROM ingredients WHERE recipe_id = ?`, [recipeId], (err) => {
                         if (err) console.error('Error deleting ingredients:', err)
                     })
@@ -158,7 +154,6 @@ static getTetstimonial(recipeId, userId) {
                         if (err) console.error('Error deleting recipe photos:', err)
                     })
 
-                    // Insert ingredients
                     for (const item of ingredients) {
                         db.query(`INSERT INTO ingredients (recipe_id, name) VALUES (?, ?)`, 
                             [recipeId, item], 
@@ -168,7 +163,6 @@ static getTetstimonial(recipeId, userId) {
                         )
                     }
 
-                    // Insert instructions and their photos (photos sudah gabungan lama+baru)
                     for (let i = 0; i < instructions.length; i++) {
                         const desc = instructions[i].desc || instructions[i];
                         db.query(`INSERT INTO instructions (recipe_id, step_description) VALUES (?, ?)`,
@@ -192,7 +186,6 @@ static getTetstimonial(recipeId, userId) {
                         )
                     }
 
-                    // Insert recipe photos
                     for (const photo of recipePhotos) {
                         db.query(`INSERT INTO recipe_photos (recipe_id, photo_url) VALUES (?, ?)`, 
                             [recipeId, photo],

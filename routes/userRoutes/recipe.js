@@ -9,9 +9,9 @@ const { verifyToken, authorize } = require('../../middlewares/jwt')
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        if (file.fieldname === 'recipePhotos') {
+        if (file.fieldname == 'recipePhotos') {
         cb(null, path.join(__dirname, '../../public/images/recipe'))
-        } else if (file.fieldname === 'instructionPhotos') {
+        } else if (file.fieldname == 'instructionPhotos') {
         cb(null, path.join(__dirname, '../../public/images/intruction'))
         } else {
         cb(new Error('Invalid field name'), null)
@@ -45,7 +45,7 @@ const deleteUploadedFiles = (files) => {
     const allFiles = [...(files.recipePhotos || []), ...(files.instructionPhotos || [])]
     allFiles.forEach(file => {
         const photoPath =
-        file.fieldname === 'recipePhotos'
+        file.fieldname == 'recipePhotos'
             ? path.join(__dirname, '../../public/images/recipe', file.filename)
             : path.join(__dirname, '../../public/images/intruction', file.filename)
         if (fs.existsSync(photoPath)) fs.unlinkSync(photoPath)
@@ -95,10 +95,9 @@ router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadField
     let instructions = req.body.instructions
     let newInstructionPhotoCounts = req.body.newInstructionPhotoCounts
 
-    // Parse jika string
-    if (typeof ingredients === 'string') try { ingredients = JSON.parse(ingredients); } catch {}
-    if (typeof instructions === 'string') try { instructions = JSON.parse(instructions); } catch {}
-    if (typeof newInstructionPhotoCounts === 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts); } catch {}
+    if (typeof ingredients == 'string') try { ingredients = JSON.parse(ingredients) } catch {}
+    if (typeof instructions == 'string') try { instructions = JSON.parse(instructions) } catch {}
+    if (typeof newInstructionPhotoCounts == 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts) } catch {}
 
     if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
     if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
@@ -122,15 +121,13 @@ router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadField
             return res.status(404).json({ message: 'Please check status' })
         }
 
-        // --- Mapping foto instruksi baru ke langkah ---
-        const newInstructionPhotos = req.files.instructionPhotos ? req.files.instructionPhotos.map(file => file.filename) : [];
-        let photoIdx = 0;
+        const newInstructionPhotos = req.files.instructionPhotos ? req.files.instructionPhotos.map(file => file.filename) : []
+        let photoIdx = 0
         for (let i = 0; i < instructions.length; i++) {
-            const count = newInstructionPhotoCounts[i] || 0;
-            const newPhotosForStep = newInstructionPhotos.slice(photoIdx, photoIdx + count);
-            photoIdx += count;
-            // Gabungkan foto baru untuk langkah ini
-            instructions[i].photos = [...newPhotosForStep];
+            const count = newInstructionPhotoCounts[i]
+            const newPhotosForStep = newInstructionPhotos.slice(photoIdx, photoIdx + count)
+            photoIdx += count
+            instructions[i].photos = [...newPhotosForStep]
         }
 
         await recipeModel.createRecipe(userId, title, description, portion, cookingTime, status, ingredients, instructions, recipePhotos)
@@ -153,12 +150,11 @@ router.patch('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), up
     let oldInstructionPhotos = req.body.oldInstructionPhotos
     let newInstructionPhotoCounts = req.body.newInstructionPhotoCounts
 
-    // Parse JSON strings if needed
-    if (typeof ingredients === 'string') try { ingredients = JSON.parse(ingredients); } catch {}
-    if (typeof instructions === 'string') try { instructions = JSON.parse(instructions); } catch {}
-    if (typeof oldRecipePhotos === 'string') try { oldRecipePhotos = JSON.parse(oldRecipePhotos); } catch {}
-    if (typeof oldInstructionPhotos === 'string') try { oldInstructionPhotos = JSON.parse(oldInstructionPhotos); } catch {}
-    if (typeof newInstructionPhotoCounts === 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts); } catch {}
+    if (typeof ingredients == 'string') try { ingredients = JSON.parse(ingredients) } catch {}
+    if (typeof instructions == 'string') try { instructions = JSON.parse(instructions) } catch {}
+    if (typeof oldRecipePhotos == 'string') try { oldRecipePhotos = JSON.parse(oldRecipePhotos) } catch {}
+    if (typeof oldInstructionPhotos == 'string') try { oldInstructionPhotos = JSON.parse(oldInstructionPhotos) } catch {}
+    if (typeof newInstructionPhotoCounts == 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts) } catch {}
 
     if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
     if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
@@ -173,64 +169,46 @@ router.patch('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), up
             return res.status(404).json({ message: 'Recipe not found' })
         }
 
-        // Get all existing photos
-        const allOldRecipePhotos = await recipeModel.getRecipePhotos(recipeId);
-        const allOldInstructionPhotos = await recipeModel.getInstructionPhotos(recipeId);
+        const allOldRecipePhotos = await recipeModel.getRecipePhotos(recipeId)
+        const allOldInstructionPhotos = await recipeModel.getInstructionPhotos(recipeId)
 
-        // Delete photos that are not in oldRecipePhotos
         allOldRecipePhotos.forEach(row => {
             if (!oldRecipePhotos.includes(row.photo_url)) {
-                deleteOldPhoto(row.photo_url);
+                deleteOldPhoto(row.photo_url)
             }
-        });
+        })
 
-        // Delete instruction photos that are not in oldInstructionPhotos
         allOldInstructionPhotos.forEach(row => {
             if (!oldInstructionPhotos.includes(row.photo_url)) {
-                deleteOldPhoto(row.photo_url);
+                deleteOldPhoto(row.photo_url)
             }
-        });
+        })
 
-        // Handle new recipe photos
-        const newRecipePhotos = req.files.recipePhotos ? req.files.recipePhotos.map(file => file.filename) : [];
-        const finalRecipePhotos = [...oldRecipePhotos, ...newRecipePhotos];
+        const newRecipePhotos = req.files.recipePhotos ? req.files.recipePhotos.map(file => file.filename) : []
+        const finalRecipePhotos = [...oldRecipePhotos, ...newRecipePhotos]
 
-        // --- Mapping foto instruksi baru ke langkah ---
-        const newInstructionPhotos = req.files.instructionPhotos ? req.files.instructionPhotos.map(file => file.filename) : [];
-        let photoIdx = 0;
+        const newInstructionPhotos = req.files.instructionPhotos ? req.files.instructionPhotos.map(file => file.filename) : []
+        let photoIdx = 0
         for (let i = 0; i < instructions.length; i++) {
-            const count = newInstructionPhotoCounts[i] || 0;
-            const newPhotosForStep = newInstructionPhotos.slice(photoIdx, photoIdx + count);
-            photoIdx += count;
-            // Gabungkan foto lama dan baru untuk langkah ini
-            instructions[i].photos = [...(instructions[i].photos || []), ...newPhotosForStep];
+            const count = newInstructionPhotoCounts[i] || 0
+            const newPhotosForStep = newInstructionPhotos.slice(photoIdx, photoIdx + count)
+            photoIdx += count
+            instructions[i].photos = [...(instructions[i].photos || []), ...newPhotosForStep]
         }
 
         if (finalRecipePhotos.length > 3) {
-            deleteUploadedFiles(req.files);
-            return res.status(400).json({ message: 'Maximum 3 recipe photos are allowed.' });
+            deleteUploadedFiles(req.files)
+            return res.status(400).json({ message: 'Maximum 3 recipe photos are allowed.' })
         }
 
         if (status !== 'process' && status !== 'rejected') {
-            deleteUploadedFiles(req.files);
-            return res.status(400).json({ message: 'Invalid status' });
+            deleteUploadedFiles(req.files)
+            return res.status(400).json({ message: 'Invalid status' })
         }
 
-        // Update recipe with all data
-        await recipeModel.updateRecipe(
-            recipeId, 
-            title, 
-            description, 
-            portion, 
-            cookingTime, 
-            status, 
-            ingredients, 
-            instructions, 
-            finalRecipePhotos, // Pass all photos (old + new)
-            oldInstructionPhotos
-        );
+        await recipeModel.updateRecipe(recipeId, title, description, portion, cookingTime, status, ingredients, instructions, finalRecipePhotos, oldInstructionPhotos)
 
-        res.status(200).json({ message: 'OK' });
+        res.status(200).json({ message: 'OK' })
     } catch (error) {
         deleteUploadedFiles(req.files)
         res.status(500).json({ message: error.message })
