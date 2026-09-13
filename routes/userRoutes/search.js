@@ -3,7 +3,6 @@ var router = express.Router()
 const recipeModel = require('../../models/recipeModel')
 const userModel = require('../../models/userModel')
 const { verifyToken, authorize } = require('../../middlewares/jwt')
-const { cacheMiddleware, myCache } = require('../../middlewares/nodeCache')
 
 router.post('/user/search_title', verifyToken, authorize(['user']), cacheMiddleware, async (req, res, next) => {
     const userId = req.user.id

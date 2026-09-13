@@ -6,8 +6,6 @@ const fs = require('fs')
 const bcrypt = require('bcryptjs')
 const userModel = require('../../models/userModel')
 const { verifyToken, authorize } = require('../../middlewares/jwt')
-const { cacheMiddleware, myCache } = require('../../middlewares/nodeCache')
-const { console } = require('inspector')
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {

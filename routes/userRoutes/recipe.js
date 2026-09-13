@@ -10,11 +10,11 @@ const { verifyToken, authorize } = require('../../middlewares/jwt')
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (file.fieldname == 'recipePhotos') {
-        cb(null, path.join(__dirname, '../../public/images/recipe'))
+            cb(null, path.join(__dirname, '../../public/images/recipe'))
         } else if (file.fieldname == 'instructionPhotos') {
-        cb(null, path.join(__dirname, '../../public/images/intruction'))
+            cb(null, path.join(__dirname, '../../public/images/intruction'))
         } else {
-        cb(new Error('Invalid field name'), null)
+            cb(new Error('Invalid field name'), null)
         }
     },
     filename: (req, file, cb) => {
@@ -25,14 +25,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png/
-        const isValid =
-        allowedTypes.test(file.mimetype) &&
-        allowedTypes.test(path.extname(file.originalname).toLowerCase())
-        isValid ? cb(null, true) : cb(new Error('Only image files (jpeg, jpg, png) are allowed'))
-    }
+    limits: { fileSize: 5 * 1024 * 1024 }
 })
 
 const uploadFields = upload.fields([
@@ -45,9 +38,9 @@ const deleteUploadedFiles = (files) => {
     const allFiles = [...(files.recipePhotos || []), ...(files.instructionPhotos || [])]
     allFiles.forEach(file => {
         const photoPath =
-        file.fieldname == 'recipePhotos'
-            ? path.join(__dirname, '../../public/images/recipe', file.filename)
-            : path.join(__dirname, '../../public/images/intruction', file.filename)
+            file.fieldname == 'recipePhotos'
+                ? path.join(__dirname, '../../public/images/recipe', file.filename)
+                : path.join(__dirname, '../../public/images/intruction', file.filename)
         if (fs.existsSync(photoPath)) fs.unlinkSync(photoPath)
     })
 }
@@ -63,27 +56,27 @@ const deleteOldPhoto = (oldPhoto) => {
 
 router.get('/user/:recipeId/detail_recipe', verifyToken, authorize(['user']), async (req, res, next) => {
     const userId = req.user.id
-    const {recipeId} = req.params
+    const { recipeId } = req.params
 
     try {
         const checkUserId = await userModel.getUserById(userId)
         if (checkUserId.length == 0) {
-            return res.status(404).json({ message: 'User not found'})
+            return res.status(404).json({ message: 'User not found' })
         }
 
         const checkRecipeId = await recipeModel.getRecipeById(recipeId)
         if (checkRecipeId.length == 0) {
-            return res.status(403).json({ message: 'Recipe not found'})
+            return res.status(403).json({ message: 'Recipe not found' })
         }
-        
 
         const detailRecipe = await recipeModel.getDetailRecipeById(userId, recipeId)
         const checkOwnerRecipe = await recipeModel.checkOwnerRecipe(userId, recipeId)
         const checkCanTestimoni = await recipeModel.checkCanTestimoni(userId, recipeId)
         const testimonials = await recipeModel.getTetstimonial(recipeId, userId)
-        res.status(200).json({detailRecipe, testimonials, checkOwnerRecipe, checkCanTestimoni})
+        res.status(200).json({ detailRecipe, testimonials, checkOwnerRecipe, checkCanTestimoni })
     } catch (e) {
         res.status(500).json({ message: e.message })
+        console.log(e)
     }
 })
 
@@ -95,9 +88,9 @@ router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadField
     let instructions = req.body.instructions
     let newInstructionPhotoCounts = req.body.newInstructionPhotoCounts
 
-    if (typeof ingredients == 'string') try { ingredients = JSON.parse(ingredients) } catch {}
-    if (typeof instructions == 'string') try { instructions = JSON.parse(instructions) } catch {}
-    if (typeof newInstructionPhotoCounts == 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts) } catch {}
+    if (typeof ingredients == 'string') try { ingredients = JSON.parse(ingredients) } catch { }
+    if (typeof instructions == 'string') try { instructions = JSON.parse(instructions) } catch { }
+    if (typeof newInstructionPhotoCounts == 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts) } catch { }
 
     if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
     if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
@@ -140,7 +133,7 @@ router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadField
 })
 
 router.patch('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), uploadFields, async (req, res) => {
-    const {recipeId} = req.params
+    const { recipeId } = req.params
     const userId = req.user.id
     const { title, description, portion, cookingTime, status } = req.body
 
@@ -150,11 +143,11 @@ router.patch('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), up
     let oldInstructionPhotos = req.body.oldInstructionPhotos
     let newInstructionPhotoCounts = req.body.newInstructionPhotoCounts
 
-    if (typeof ingredients == 'string') try { ingredients = JSON.parse(ingredients) } catch {}
-    if (typeof instructions == 'string') try { instructions = JSON.parse(instructions) } catch {}
-    if (typeof oldRecipePhotos == 'string') try { oldRecipePhotos = JSON.parse(oldRecipePhotos) } catch {}
-    if (typeof oldInstructionPhotos == 'string') try { oldInstructionPhotos = JSON.parse(oldInstructionPhotos) } catch {}
-    if (typeof newInstructionPhotoCounts == 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts) } catch {}
+    if (typeof ingredients == 'string') try { ingredients = JSON.parse(ingredients) } catch { }
+    if (typeof instructions == 'string') try { instructions = JSON.parse(instructions) } catch { }
+    if (typeof oldRecipePhotos == 'string') try { oldRecipePhotos = JSON.parse(oldRecipePhotos) } catch { }
+    if (typeof oldInstructionPhotos == 'string') try { oldInstructionPhotos = JSON.parse(oldInstructionPhotos) } catch { }
+    if (typeof newInstructionPhotoCounts == 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts) } catch { }
 
     if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
     if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
@@ -212,21 +205,22 @@ router.patch('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), up
     } catch (error) {
         deleteUploadedFiles(req.files)
         res.status(500).json({ message: error.message })
+        console.log(error)
     }
 })
 
 router.get('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), async (req, res, next) => {
     const userId = req.user.id
-    const {recipeId} = req.params
+    const { recipeId } = req.params
 
     try {
         const checkRecipeId = await recipeModel.getRecipeById(recipeId)
         if (checkRecipeId.length == 0) {
-            return res.status(403).json({ message: 'Recipe not found'})
+            return res.status(403).json({ message: 'Recipe not found' })
         }
 
         const adminComment = await recipeModel.getAdminCommentByIdRecipe(recipeId)
-        res.status(200).json({adminComment})
+        res.status(200).json({ adminComment })
     } catch (e) {
         res.status(500).json({ message: e.message })
     }
