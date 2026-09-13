@@ -1,15 +1,14 @@
-var createError = require('http-errors')
-var express = require('express')
-var path = require('path')
-var cookieParser = require('cookie-parser')
-var logger = require('morgan')
-var dotenv = require('dotenv')
+const createError = require('http-errors')
+const express = require('express')
+const path = require('path')
+const cookieParser = require('cookie-parser')
+const logger = require('morgan')
+const dotenv = require('dotenv')
 const cors = require('cors')
 
 dotenv.config()
 
-var indexRouter = require('./routes/index')
-var authRoutes = require('./routes/auth')
+const authRoutes = require('./routes/auth')
 
 //admin
 const adminDashboard = require('./routes/adminRoutes/dashboard')
@@ -24,7 +23,7 @@ const userSearch = require('./routes/userRoutes/search')
 const userTestimonial = require('./routes/userRoutes/testimonial')
 const userRecipe = require('./routes/userRoutes/recipe')
 
-var app = express()
+const app = express()
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'))
@@ -37,7 +36,6 @@ app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(express.static(path.join(__dirname, 'public')))
 
-app.use('/', indexRouter)
 app.use('/API', authRoutes)
 
 //admin

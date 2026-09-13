@@ -1,24 +1,26 @@
-var express = require('express')
-var router = express.Router()
+const express = require('express')
+const router = express.Router()
 const recipeModel = require('../../models/recipeModel')
 const { verifyToken, authorize } = require('../../middlewares/jwt')
 
-router.get('/admin/recipes_approved/:recipeId', verifyToken, authorize(['admin']), async (req, res, next) => {
-    const {recipeId} = req.params
+router.get('/admin/recipes_approved/:recipeId', verifyToken, authorize(['admin']), async (req, res) => {
     try {
+        const {recipeId} = req.params
         const statusRecipe = await recipeModel.getRecipeById(recipeId)
         if (!statusRecipe || statusRecipe.length === 0) return res.status(404).json({ message: 'Recipe not found' })
+        
         if (statusRecipe[0].status != 'approved') return res.status(403).json({ message: 'Recipe status is not publish'})
         
         const detailRecipe = await recipeModel.getDetailRecipeApprovedById(recipeId)
         const adminComment = await recipeModel.getAdminCommentByIdRecipe(recipeId)
         res.status(200).json({detailRecipe, adminComment})
     } catch (err) {
-        res.status(500).json({ message: err.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(err)
     }
 })
 
-router.get('/admin/recipes_processing/:recipeId', verifyToken, authorize(['admin']), async (req, res, next) => {
+router.get('/admin/recipes_processing/:recipeId', verifyToken, authorize(['admin']), async (req, res) => {
     const {recipeId} = req.params
     try {
         const statusRecipe = await recipeModel.getRecipeById(recipeId)
@@ -28,11 +30,12 @@ router.get('/admin/recipes_processing/:recipeId', verifyToken, authorize(['admin
         const detailRecipe = await recipeModel.getDetailRecipeProcessById(recipeId)
         res.status(200).json({detailRecipe})
     } catch (err) {
-        res.status(500).json({ message: err.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(err)
     }
 })
 
-router.patch('/admin/recipes_processing/:recipeId', verifyToken, authorize(['admin']), async (req, res, next) => {
+router.patch('/admin/recipes_processing/:recipeId', verifyToken, authorize(['admin']), async (req, res) => {
     const adminId = req.user.id
     const {recipeId} = req.params
     const {status, adminComment} = req.body
@@ -45,7 +48,8 @@ router.patch('/admin/recipes_processing/:recipeId', verifyToken, authorize(['adm
         await recipeModel.updateStatusRecipe(status, adminComment, adminId, recipeId)
         res.status(200).json({ message: 'OK'})
     } catch (err) {
-        res.status(500).json({ message: err.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(err)
     }
 })
 

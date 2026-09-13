@@ -1,5 +1,5 @@
-var express = require('express')
-var router = express.Router()
+const express = require('express')
+const router = express.Router()
 const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
@@ -42,9 +42,9 @@ const deleteUploadedFiles = (files) => {
     }
 }
 
-router.get('/user/create_testimoni', verifyToken, authorize(['user']), async (req, res, next) => {
-    const userId = req.user.id
+router.get('/user/create_testimoni', verifyToken, authorize(['user']), async (req, res) => {
     try {
+        const userId = req.user.id
         const checkUserId = await userModel.getUserById(userId)
         if (checkUserId.length == 0) {
             return res.status(404).json({ message: 'User not found'})
@@ -54,16 +54,16 @@ router.get('/user/create_testimoni', verifyToken, authorize(['user']), async (re
 
         res.status(200).json(respon)
     } catch (e) {
-        res.status(500).json({ message: e.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(e)
     }
 })
 
-router.post('/user/:recipeId/create_testimoni', verifyToken, authorize(['user']), upload.array('testimonialPhotos'), async (req, res, next) => {
-    const userId = req.user.id
-    const { recipeId } = req.params
-    const { comment } = req.body
-    
+router.post('/user/:recipeId/create_testimoni', verifyToken, authorize(['user']), upload.array('testimonialPhotos'), async (req, res) => {
     try {
+        const userId = req.user.id
+        const { recipeId } = req.params
+        const { comment } = req.body
         if (req.files.length == 0) {
             return res.status(400).json({ message: 'Testimonial photos are required.' })
         }
@@ -98,15 +98,15 @@ router.post('/user/:recipeId/create_testimoni', verifyToken, authorize(['user'])
         res.status(200).json({ message: 'OK' })
     } catch (e) {
         deleteUploadedFiles(req.files)
-        res.status(500).json({ message: e.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(e)
     }
 })
 
-router.get('/user/:recipeId/testimoni', verifyToken, authorize(['user']), async (req, res, next) => {
-    const userId = req.user.id
-    const { recipeId } = req.params
-
+router.get('/user/:recipeId/testimoni', verifyToken, authorize(['user']), async (req, res) => {
     try {
+        const userId = req.user.id
+        const { recipeId } = req.params
         const checkUserId = await userModel.getUserById(userId)
         if (checkUserId.length == 0) {
             return res.status(404).json({ message: 'User not found'})
@@ -124,7 +124,8 @@ router.get('/user/:recipeId/testimoni', verifyToken, authorize(['user']), async 
 
         res.status(200).json({countTestimoni, getTestimoniByUser, getAllTestimoni})
     } catch (e) {
-        res.status(500).json({ message: e.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(e)
     }
 })
 

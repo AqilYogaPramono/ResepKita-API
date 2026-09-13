@@ -1,5 +1,5 @@
-var express = require('express')
-var router = express.Router()
+const express = require('express')
+const router = express.Router()
 const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
@@ -51,11 +51,11 @@ const deleteOldPhoto = (oldPhotoFilename) => {
     }
 }
 
-router.get('/user/profile/:profileId', verifyToken, authorize(['user']), async (req, res, next) => {
-    const userId = req.user.id
-    const {profileId} = req.params
-
+router.get('/user/profile/:profileId', verifyToken, authorize(['user']), async (req, res) => {
     try {
+        const userId = req.user.id
+        const {profileId} = req.params
+
         const checkUserId = await userModel.getUserById(userId)
         if (checkUserId.length == 0) {
             return res.status(404).json({ message: 'User not found'})
@@ -70,24 +70,26 @@ router.get('/user/profile/:profileId', verifyToken, authorize(['user']), async (
         const recipeProcess = await userModel.recipeProcess(profileId)
         const recipeReject = await userModel.recipeReject(profileId)
         const recipePublish = await userModel.recipePublish(userId, profileId)
+
+        let responseObject = {}
         if (profileId == userId) {
-            responseObject ={profile, recipePublish, recipeProcess, recipeReject, is_owner: true}
+            responseObject = {profile, recipePublish, recipeProcess, recipeReject, is_owner: true}
         } else if (profileId != userId) {
-            responseObject ={profile, recipePublish, is_owner: false}
+            responseObject = {profile, recipePublish, is_owner: false}
         }
 
         res.status(200).json(responseObject)
     } catch (e) {
-        res.status(500).json({ message: e.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(e)
     }
 })
 
-router.patch('/user/profile/:profileId', verifyToken, authorize(['user']), upload.single('profile_photo'), async (req, res, next) => {
-    const userId = req.user.id
-    const {profileId} = req.params
-    const {username, nickname, bio} = req.body
-
+router.patch('/user/profile/:profileId', verifyToken, authorize(['user']), upload.single('profile_photo'), async (req, res) => {
     try {
+        const userId = req.user.id
+        const {profileId} = req.params
+        const {username, nickname, bio} = req.body
         const checkUserId = await userModel.getUserById(userId)
         if (checkUserId.length == 0) {
             deleteUploadedFile(req.file)
@@ -146,16 +148,16 @@ router.patch('/user/profile/:profileId', verifyToken, authorize(['user']), uploa
         res.status(200).json({message: 'OK'})
     } catch (e) {
         deleteUploadedFile(req.file)
-        res.status(500).json({ message: e.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(e)
     }
 })
 
-router.patch('/user/profile/change_email/:profileId', verifyToken, authorize(['user']), async (req, res, next) => {
-    const userId = req.user.id
-    const {profileId} = req.params
-    const {email, newEmail, confirmationEmail} = req.body
-
+router.patch('/user/profile/change_email/:profileId', verifyToken, authorize(['user']), async (req, res) => {
     try {
+        const userId = req.user.id
+        const {profileId} = req.params
+        const {email, newEmail, confirmationEmail} = req.body
         const checkUserId = await userModel.getUserById(userId)
         if (checkUserId.length == 0) {
             deleteUploadedFile(req.file)
@@ -194,16 +196,16 @@ router.patch('/user/profile/change_email/:profileId', verifyToken, authorize(['u
         res.status(200).json({message: 'OK'})
     } catch (e) {
         deleteUploadedFile(req.file)
-        res.status(500).json({ message: e.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(e)
     }
 })
 
-router.patch('/user/profile/change_password/:profileId', verifyToken, authorize(['user']), async (req, res, next) => {
-    const userId = req.user.id
-    const {profileId} = req.params
-    const {password, newPassword, confirmationPassword} = req.body
-
+router.patch('/user/profile/change_password/:profileId', verifyToken, authorize(['user']), async (req, res) => {
     try {
+        const userId = req.user.id
+        const {profileId} = req.params
+        const {password, newPassword, confirmationPassword} = req.body
         const checkUserId = await userModel.getUserById(userId)
         if (checkUserId.length == 0) {
             deleteUploadedFile(req.file)
@@ -254,7 +256,8 @@ router.patch('/user/profile/change_password/:profileId', verifyToken, authorize(
         res.status(200).json({message: 'OK'})
     } catch (e) {
         deleteUploadedFile(req.file)
-        res.status(500).json({ message: e.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(e)
     }
 })
 
