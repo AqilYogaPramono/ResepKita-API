@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser')
 const logger = require('morgan')
 const dotenv = require('dotenv')
 const cors = require('cors')
+const multer = require('multer')
 
 dotenv.config()
 
@@ -58,11 +59,19 @@ app.use(function(req, res, next) {
 
 // error handler
 app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File size exceeds maximum limit.' })
+    }
+    return res.status(400).json({ message: err.message })
+  }
+  if (err && err.message && (err.message.includes('Only image files') || err.message.includes('allowed'))) {
+    return res.status(400).json({ message: err.message })
+  }
+
   res.locals.message = err.message
   res.locals.error = req.app.get('env') === 'development' ? err : {}
 
-  // render the error page
   res.status(err.status || 500)
   res.render('error')
 })
