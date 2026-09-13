@@ -1,18 +1,26 @@
-let mysql = require('mysql')
+const mysql = require('mysql2')
 
-let connection = mysql.createConnection({
+const pool = mysql.createPool ({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
-})
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    maxIdle: 2,
+    idleTimeout: 60000,
+    enableKeepAlive: true,
+    queueLimit: 0
+}).promise();
 
-connection.connect(function (error) {
-    if (error) {
-        console.log (error)
-    } else {
-        console.log ('success connect to mysql')
+(async () => {
+    try {
+        const conn = await pool.getConnection()
+        console.log('koneksi Berhasil')
+        conn.release()
+    } catch (err) {
+        console.log('Koneksi Gagal:', err)
     }
-})
+})()
 
-module.exports = connection
+module.exports = pool
