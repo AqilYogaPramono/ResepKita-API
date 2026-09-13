@@ -6,6 +6,7 @@ const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
 const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -128,27 +129,47 @@ router.post('/register', upload.single('profile_photo'), async (req, res) => {
     }
     })
 
-    router.post('/login', async (req, res) => {
-    const { email, password } = req.body
-    if (!email)
-        return res.status(400).json({ message: 'Email is required.' })
-    if (!password)
-        return res.status(400).json({ message: 'Password is required.' })
-
+router.post('/login', async (req, res) => {
     try {
-        let user = await userModel.login(email, password)
+        const { email, password } = req.body
+
+        if (!email)
+            return res.status(400).json({ message: 'Email is required.' })
+
+        if (!password)
+            return res.status(400).json({ message: 'Password is required.' })
+
+        let account = null
         let userType = null
-        if (user) {
-        userType = 'user'
+
+        const users = await userModel.getByEmail(email)
+        if (users.length > 0) {
+            account = users[0]
+            userType = 'user'
         } else {
-        user = await adminModel.login(email, password)
-        if (user) {
-            userType = 'admin'
-        } else {
+            const admins = await adminModel.getByEmail(email)
+            if (admins.length > 0) {
+                account = admins[0]
+                userType = 'admin'
+            }
+        }
+
+        if (!account) {
             return res.status(403).json({ message: 'Email not found.' })
         }
+
+        const isMatch = await bcrypt.compare(password, account.password)
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Wrong password.' })
         }
-        res.status(200).json({ token: user.token, userType })
+
+        const token = jwt.sign(
+            { id: account.id, role: userType, email: account.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '1000d' }
+        )
+
+        res.status(200).json({ token, userType })
     } catch (err) {
         res.status(500).json({ message: err.message })
     }

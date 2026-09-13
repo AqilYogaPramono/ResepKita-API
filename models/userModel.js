@@ -1,6 +1,5 @@
 const db = require('../configs/db')
 const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
 
 class userModel {
     static async registerUser(photoProfile, username, nickname, email, password) {
@@ -34,26 +33,6 @@ class userModel {
         }
     }
 
-    static async login(email, password) {
-        try {
-            const sql = 'SELECT * FROM users WHERE email = ?'
-            const [results] = await db.query(sql, [email])
-            if (results.length === 0) return null
-            const user = results[0]
-            const isMatch = await bcrypt.compare(password, user.password)
-            if (!isMatch) throw { status: 401, message: 'Wrong password.' }
-            
-            const token = jwt.sign(
-                { id: user.id, role: 'user', email: user.email },
-                process.env.JWT_SECRET,
-                { expiresIn: '1000d' }
-            )
-            return { token }
-        } catch (err) {
-            if (err.status) throw err
-            throw { status: 500, message: err.message }
-        }
-    }
 
     static async getUserById(userId) {
         try {

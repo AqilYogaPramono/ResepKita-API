@@ -1,20 +1,11 @@
 const db = require('../configs/db')
-const jwt = require('jsonwebtoken')
 
 class adminModel {
-    static async login(email, password) {
+    static async getByEmail(email) {
         try {
             const sql = 'SELECT * FROM admins WHERE email = ?'
             const [results] = await db.query(sql, [email])
-            if (results.length === 0) return null
-            const admin = results[0]
-            if (admin.password !== password) throw { status: 401, message: 'Wrong password.' }
-            const token = jwt.sign(
-                { id: admin.id, role: 'admin', email: admin.email },
-                process.env.JWT_SECRET,
-                { expiresIn: '1000d' }
-            )
-            return { token }
+            return results
         } catch (err) {
             throw err
         }
