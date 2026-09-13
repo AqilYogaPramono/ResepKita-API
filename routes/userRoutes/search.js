@@ -1,14 +1,13 @@
-var express = require('express')
-var router = express.Router()
+const express = require('express')
+const router = express.Router()
 const recipeModel = require('../../models/recipeModel')
 const userModel = require('../../models/userModel')
 const { verifyToken, authorize } = require('../../middlewares/jwt')
 
 router.post('/user/search_title', verifyToken, authorize(['user']), async (req, res) => {
-    const userId = req.user.id
-    const {title} = req.body
-
     try {
+        const userId = req.user.id
+        const {title} = req.body
         const checkUserId = await userModel.getUserById(userId)
         if (checkUserId.length == 0) {
             return res.status(404).json({ message: 'User not found'})
@@ -17,7 +16,8 @@ router.post('/user/search_title', verifyToken, authorize(['user']), async (req, 
         const rows = await recipeModel.getRecipeByTitle(userId, title)
         res.status(200).json(rows)
     } catch (err) {
-        res.status(500).json({ message: err.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(err)
     }
 })
 

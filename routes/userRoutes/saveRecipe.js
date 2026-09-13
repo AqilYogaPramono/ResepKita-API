@@ -1,14 +1,13 @@
-var express = require('express')
-var router = express.Router()
+const express = require('express')
+const router = express.Router()
 const favoriteModel = require('../../models/favoriteModel')
 const recipeModel = require('../../models/recipeModel')
 const userModel = require('../../models/userModel')
 const { verifyToken, authorize } = require('../../middlewares/jwt')
 
-router.get('/user/favorite_recipe', verifyToken, authorize(['user']), async (req, res, next) => {
-    const userId = req.user.id
-
+router.get('/user/favorite_recipe', verifyToken, authorize(['user']), async (req, res) => {
     try {
+        const userId = req.user.id
         const checkUserId = await userModel.getUserById(userId)
         if (checkUserId.length == 0) {
             return res.status(404).json({ message: 'User not found'})
@@ -18,15 +17,15 @@ router.get('/user/favorite_recipe', verifyToken, authorize(['user']), async (req
 
         res.status(200).json(rows)
     } catch (e) {
-        res.status(500).json({ message: e.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(e)
     }
 })
 
-router.post('/user/save_recipe/:recipeId', verifyToken, authorize(['user']), async (req, res, next) => {
-    const userId = req.user.id
-    const {recipeId} = req.params
-
+router.post('/user/save_recipe/:recipeId', verifyToken, authorize(['user']), async (req, res) => {
     try {
+        const userId = req.user.id
+        const {recipeId} = req.params
         const checkUserId = await userModel.getUserById(userId)
         if (checkUserId.length == 0) {
             return res.status(404).json({ message: 'User not found'})
@@ -56,15 +55,15 @@ router.post('/user/save_recipe/:recipeId', verifyToken, authorize(['user']), asy
 
         res.status(200).json({message: 'OK'})
     } catch (e) {
-        res.status(500).json({ message: e.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(e)
     }
 })
 
-router.delete('/user/save_recipe/:recipeId', verifyToken, authorize(['user']), async (req, res, next) => {
-    const userId = req.user.id
-    const {recipeId} = req.params
-
+router.delete('/user/save_recipe/:recipeId', verifyToken, authorize(['user']), async (req, res) => {
     try {
+        const userId = req.user.id
+        const {recipeId} = req.params
         const checkUserId = await userModel.getUserById(userId)
         if (checkUserId.length == 0) {
             return res.status(404).json({ message: 'User not found'})
@@ -79,7 +78,8 @@ router.delete('/user/save_recipe/:recipeId', verifyToken, authorize(['user']), a
 
         res.status(200).json({message: 'OK'})
     } catch (e) {
-        res.status(500).json({ message: e.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(e)
     }
 })
 

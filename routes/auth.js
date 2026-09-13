@@ -43,91 +43,93 @@ const deleteUploadedFile = (file) => {
 }
 
 router.post('/register', upload.single('profile_photo'), async (req, res) => {
-    const { username, nickname, email, password, confirmationPassword} = req.body
-    const photoProfile = req.file ? req.file.filename : 'default.png'
-
-    if (!username) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Username is required.' })
-    }
-    if (!email) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Email is required.' })
-    }
-    if (!password) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Password is required.' })
-    }
-    if (!confirmationPassword) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Confirmation password is required.' })
-    }
-
-    if (/\s/.test(username)) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Username cannot have spaces.' })
-    }
-    if (!/^[a-zA-Z0-9._]+$/.test(username)) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Username can only contain letters, numbers, dots, and underscores.' })
-    }
-    if (/^\d+$/.test(username)) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Username cannot be only numbers.' })
-    }
-    if (/\.\./.test(username)) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Username cannot have consecutive dots.' })
-    }
-    if (username.endsWith('.')) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Username cannot end with a dot.' })
-    }
-    if (username.length < 1 || username.length > 30) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Username must be between 1 and 30 characters.' })
-    }
-
-    const checkUser = await userModel.getByUsername(username)
-    if (checkUser.length > 0) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Username already exists.' })
-    }
-
-    const checkEmail = await userModel.getByEmail(email)
-    if (checkEmail.length > 0) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Email already exists.' })
-    }
-
-    if (password.length < 6) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Password must be at least 6 characters.' })
-    }
-    if (!/[A-Z]/.test(password)) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Password must have at least one uppercase letter.' })
-    }
-    if (!/[a-z]/.test(password)) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Password must have at least one lowercase letter.' })
-    }
-    if (!/\d/.test(password)) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Password must contain at least one number.' })
-    }
-    if (password !== confirmationPassword) {
-        deleteUploadedFile(req.file)
-        return res.status(400).json({ message: 'Password and confirmation password do not match.' })
-    }
-
     try {
+        const { username, nickname, email, password, confirmationPassword } = req.body
+        const photoProfile = req.file ? req.file.filename : 'default.png'
+
+        if (!username) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Username is required.' })
+        }
+        if (!email) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Email is required.' })
+        }
+        if (!password) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Password is required.' })
+        }
+        if (!confirmationPassword) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Confirmation password is required.' })
+        }
+
+        if (/\s/.test(username)) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Username cannot have spaces.' })
+        }
+        if (!/^[a-zA-Z0-9._]+$/.test(username)) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Username can only contain letters, numbers, dots, and underscores.' })
+        }
+        if (/^\d+$/.test(username)) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Username cannot be only numbers.' })
+        }
+        if (/\.\./.test(username)) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Username cannot have consecutive dots.' })
+        }
+        if (username.endsWith('.')) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Username cannot end with a dot.' })
+        }
+        if (username.length < 1 || username.length > 30) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Username must be between 1 and 30 characters.' })
+        }
+
+        const checkUser = await userModel.getByUsername(username)
+        if (checkUser.length > 0) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Username already exists.' })
+        }
+
+        const checkEmail = await userModel.getByEmail(email)
+        if (checkEmail.length > 0) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Email already exists.' })
+        }
+
+        if (password.length < 6) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Password must be at least 6 characters.' })
+        }
+        if (!/[A-Z]/.test(password)) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Password must have at least one uppercase letter.' })
+        }
+        if (!/[a-z]/.test(password)) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Password must have at least one lowercase letter.' })
+        }
+        if (!/\d/.test(password)) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Password must contain at least one number.' })
+        }
+        if (password !== confirmationPassword) {
+            deleteUploadedFile(req.file)
+            return res.status(400).json({ message: 'Password and confirmation password do not match.' })
+        }
+
         await userModel.registerUser(photoProfile, username, nickname, email, password)
         res.status(201).json({ message: 'OK'})
     } catch (err) {
-        res.status(500).json({ message: err.message })
+        deleteUploadedFile(req.file)
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(err)
     }
-    })
+})
 
 router.post('/login', async (req, res) => {
     try {
@@ -171,7 +173,8 @@ router.post('/login', async (req, res) => {
 
         res.status(200).json({ token, userType })
     } catch (err) {
-        res.status(500).json({ message: err.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(err)
     }
 })
 
@@ -188,7 +191,8 @@ router.post('/logout', (req, res) => {
             res.status(200).json({ message: 'Logout successful.' })
         })
     } catch (err) {
-        res.status(500).json({ message: err.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(err)
     }
 })
 

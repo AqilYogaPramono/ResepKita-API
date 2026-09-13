@@ -25,7 +25,17 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png/
+        const mimetype = allowedTypes.test(file.mimetype)
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase())
+        if (mimetype && extname) {
+            cb(null, true)
+        } else {
+            cb(new Error('Only image files (jpeg, jpg, png) are allowed'))
+        }
+    }
 })
 
 const uploadFields = upload.fields([
@@ -54,11 +64,10 @@ const deleteOldPhoto = (oldPhoto) => {
     }
 }
 
-router.get('/user/:recipeId/detail_recipe', verifyToken, authorize(['user']), async (req, res, next) => {
-    const userId = req.user.id
-    const { recipeId } = req.params
-
+router.get('/user/:recipeId/detail_recipe', verifyToken, authorize(['user']), async (req, res) => {
     try {
+        const userId = req.user.id
+        const { recipeId } = req.params
         const checkUserId = await userModel.getUserById(userId)
         if (checkUserId.length == 0) {
             return res.status(404).json({ message: 'User not found' })
@@ -75,28 +84,27 @@ router.get('/user/:recipeId/detail_recipe', verifyToken, authorize(['user']), as
         const testimonials = await recipeModel.getTetstimonial(recipeId, userId)
         res.status(200).json({ detailRecipe, testimonials, checkOwnerRecipe, checkCanTestimoni })
     } catch (e) {
-        res.status(500).json({ message: e.message })
+        res.status(500).json({ message: "Internal Server Error" })
         console.log(e)
     }
 })
 
 router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadFields, async (req, res) => {
-    const userId = req.user.id
-    const { title, description, portion, cookingTime, status } = req.body
-
-    let ingredients = req.body.ingredients
-    let instructions = req.body.instructions
-    let newInstructionPhotoCounts = req.body.newInstructionPhotoCounts
-
-    if (typeof ingredients == 'string') try { ingredients = JSON.parse(ingredients) } catch { }
-    if (typeof instructions == 'string') try { instructions = JSON.parse(instructions) } catch { }
-    if (typeof newInstructionPhotoCounts == 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts) } catch { }
-
-    if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
-    if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
-    if (!Array.isArray(newInstructionPhotoCounts)) newInstructionPhotoCounts = newInstructionPhotoCounts ? [newInstructionPhotoCounts] : []
-
     try {
+        const userId = req.user.id
+        const { title, description, portion, cookingTime, status } = req.body
+
+        let ingredients = req.body.ingredients
+        let instructions = req.body.instructions
+        let newInstructionPhotoCounts = req.body.newInstructionPhotoCounts
+
+        if (typeof ingredients == 'string') try { ingredients = JSON.parse(ingredients) } catch { }
+        if (typeof instructions == 'string') try { instructions = JSON.parse(instructions) } catch { }
+        if (typeof newInstructionPhotoCounts == 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts) } catch { }
+
+        if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
+        if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
+        if (!Array.isArray(newInstructionPhotoCounts)) newInstructionPhotoCounts = newInstructionPhotoCounts ? [newInstructionPhotoCounts] : []
         const userCheck = await userModel.getUserById(userId)
         if (userCheck.length == 0) {
             deleteUploadedFiles(req.files)
@@ -128,34 +136,34 @@ router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadField
         res.status(201).json({ message: 'OK' })
     } catch (error) {
         deleteUploadedFiles(req.files)
-        res.status(500).json({ message: error.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(error)
     }
 })
 
 router.patch('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), uploadFields, async (req, res) => {
-    const { recipeId } = req.params
-    const userId = req.user.id
-    const { title, description, portion, cookingTime, status } = req.body
-
-    let ingredients = req.body.ingredients
-    let instructions = req.body.instructions
-    let oldRecipePhotos = req.body.oldRecipePhotos
-    let oldInstructionPhotos = req.body.oldInstructionPhotos
-    let newInstructionPhotoCounts = req.body.newInstructionPhotoCounts
-
-    if (typeof ingredients == 'string') try { ingredients = JSON.parse(ingredients) } catch { }
-    if (typeof instructions == 'string') try { instructions = JSON.parse(instructions) } catch { }
-    if (typeof oldRecipePhotos == 'string') try { oldRecipePhotos = JSON.parse(oldRecipePhotos) } catch { }
-    if (typeof oldInstructionPhotos == 'string') try { oldInstructionPhotos = JSON.parse(oldInstructionPhotos) } catch { }
-    if (typeof newInstructionPhotoCounts == 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts) } catch { }
-
-    if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
-    if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
-    if (!Array.isArray(oldRecipePhotos)) oldRecipePhotos = oldRecipePhotos ? [oldRecipePhotos] : []
-    if (!Array.isArray(oldInstructionPhotos)) oldInstructionPhotos = oldInstructionPhotos ? [oldInstructionPhotos] : []
-    if (!Array.isArray(newInstructionPhotoCounts)) newInstructionPhotoCounts = newInstructionPhotoCounts ? [newInstructionPhotoCounts] : []
-
     try {
+        const { recipeId } = req.params
+        const userId = req.user.id
+        const { title, description, portion, cookingTime, status } = req.body
+
+        let ingredients = req.body.ingredients
+        let instructions = req.body.instructions
+        let oldRecipePhotos = req.body.oldRecipePhotos
+        let oldInstructionPhotos = req.body.oldInstructionPhotos
+        let newInstructionPhotoCounts = req.body.newInstructionPhotoCounts
+
+        if (typeof ingredients == 'string') try { ingredients = JSON.parse(ingredients) } catch { }
+        if (typeof instructions == 'string') try { instructions = JSON.parse(instructions) } catch { }
+        if (typeof oldRecipePhotos == 'string') try { oldRecipePhotos = JSON.parse(oldRecipePhotos) } catch { }
+        if (typeof oldInstructionPhotos == 'string') try { oldInstructionPhotos = JSON.parse(oldInstructionPhotos) } catch { }
+        if (typeof newInstructionPhotoCounts == 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts) } catch { }
+
+        if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
+        if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
+        if (!Array.isArray(oldRecipePhotos)) oldRecipePhotos = oldRecipePhotos ? [oldRecipePhotos] : []
+        if (!Array.isArray(oldInstructionPhotos)) oldInstructionPhotos = oldInstructionPhotos ? [oldInstructionPhotos] : []
+        if (!Array.isArray(newInstructionPhotoCounts)) newInstructionPhotoCounts = newInstructionPhotoCounts ? [newInstructionPhotoCounts] : []
         const recipeData = await recipeModel.getRecipeByIdAndUser(recipeId, userId)
         if (!recipeData) {
             deleteUploadedFiles(req.files)
@@ -204,16 +212,15 @@ router.patch('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), up
         res.status(200).json({ message: 'OK' })
     } catch (error) {
         deleteUploadedFiles(req.files)
-        res.status(500).json({ message: error.message })
+        res.status(500).json({ message: "Internal Server Error" })
         console.log(error)
     }
 })
 
-router.get('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), async (req, res, next) => {
-    const userId = req.user.id
-    const { recipeId } = req.params
-
+router.get('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), async (req, res) => {
     try {
+        const userId = req.user.id
+        const { recipeId } = req.params
         const checkRecipeId = await recipeModel.getRecipeById(recipeId)
         if (checkRecipeId.length == 0) {
             return res.status(403).json({ message: 'Recipe not found' })
@@ -222,7 +229,8 @@ router.get('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), asyn
         const adminComment = await recipeModel.getAdminCommentByIdRecipe(recipeId)
         res.status(200).json({ adminComment })
     } catch (e) {
-        res.status(500).json({ message: e.message })
+        res.status(500).json({ message: "Internal Server Error" })
+        console.log(e)
     }
 })
 
