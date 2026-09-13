@@ -7,6 +7,7 @@ router.get('/admin/recipes_approved/:recipeId', verifyToken, authorize(['admin']
     const {recipeId} = req.params
     try {
         const statusRecipe = await recipeModel.getRecipeById(recipeId)
+        if (!statusRecipe || statusRecipe.length === 0) return res.status(404).json({ message: 'Recipe not found' })
         if (statusRecipe[0].status != 'approved') return res.status(403).json({ message: 'Recipe status is not publish'})
         
         const detailRecipe = await recipeModel.getDetailRecipeApprovedById(recipeId)
@@ -21,6 +22,7 @@ router.get('/admin/recipes_processing/:recipeId', verifyToken, authorize(['admin
     const {recipeId} = req.params
     try {
         const statusRecipe = await recipeModel.getRecipeById(recipeId)
+        if (!statusRecipe || statusRecipe.length === 0) return res.status(404).json({ message: 'Recipe not found' })
         if (statusRecipe[0].status == 'approved') return res.status(403).json({ message: 'Recipe status is publish'})
         
         const detailRecipe = await recipeModel.getDetailRecipeProcessById(recipeId)

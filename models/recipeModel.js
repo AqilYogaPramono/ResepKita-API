@@ -214,9 +214,9 @@ class recipeModel {
             const [results] = await db.query(`SELECT r.id AS recipe_id, u.username AS recipe_creator_username, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', rp.photo_url, '"') ORDER BY rp.id), ']') AS recipe_photo, r.title AS recipe_name, r.description AS recipe_bio, r.cooking_time, r.portion AS total_portions, ( SELECT JSON_ARRAYAGG(ing.name) FROM ingredients AS ing WHERE ing.recipe_id = r.id ) AS ingredients, ( SELECT JSON_ARRAYAGG( JSON_OBJECT( 'introduction', ins.step_description, 'instruction_photos', ( SELECT JSON_ARRAYAGG(ip.photo_url) FROM instruction_photos AS ip WHERE ip.instruction_id = ins.id ) ) ) FROM instructions AS ins WHERE ins.recipe_id = r.id ) AS all_instructions FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN recipe_photos AS rp ON r.id = rp.recipe_id WHERE r.id = ? AND r.status = 'approved' GROUP BY r.id, u.username, r.title, r.description, r.cooking_time, r.portion`, [recipeId])
             return results.map(row => ({
                 ...row,
-                recipe_photo: JSON.parse(row.recipe_photo || '[]'),
-                ingredients: JSON.parse(row.ingredients || '[]'),
-                all_instructions: JSON.parse(row.all_instructions || '[]')
+                recipe_photo: typeof row.recipe_photo === 'string' ? JSON.parse(row.recipe_photo || '[]') : (row.recipe_photo || []),
+                ingredients: typeof row.ingredients === 'string' ? JSON.parse(row.ingredients || '[]') : (row.ingredients || []),
+                all_instructions: typeof row.all_instructions === 'string' ? JSON.parse(row.all_instructions || '[]') : (row.all_instructions || [])
             }))
         } catch (err) {
             throw err
@@ -228,9 +228,9 @@ class recipeModel {
             const [results] = await db.query(`SELECT r.id AS recipe_id, u.username AS recipe_creator_username, CONCAT('[', GROUP_CONCAT(DISTINCT CONCAT('"', rp.photo_url, '"') ORDER BY rp.id), ']') AS recipe_photo, r.title AS recipe_name, r.description AS recipe_bio, r.cooking_time, r.portion AS total_portions, ( SELECT JSON_ARRAYAGG(ing.name) FROM ingredients AS ing WHERE ing.recipe_id = r.id ) AS ingredients, ( SELECT JSON_ARRAYAGG( JSON_OBJECT( 'introduction', ins.step_description, 'instruction_photos', ( SELECT JSON_ARRAYAGG(ip.photo_url) FROM instruction_photos AS ip WHERE ip.instruction_id = ins.id ) ) ) FROM instructions AS ins WHERE ins.recipe_id = r.id ) AS all_instructions FROM recipes AS r JOIN users AS u ON r.user_id = u.id LEFT JOIN recipe_photos AS rp ON r.id = rp.recipe_id WHERE r.id = ? AND r.status = 'process' GROUP BY r.id, u.username, r.title, r.description, r.cooking_time, r.portion`, [recipeId])
             return results.map(row => ({
                 ...row,
-                recipe_photo: JSON.parse(row.recipe_photo || '[]'),
-                ingredients: JSON.parse(row.ingredients || '[]'),
-                all_instructions: JSON.parse(row.all_instructions || '[]')
+                recipe_photo: typeof row.recipe_photo === 'string' ? JSON.parse(row.recipe_photo || '[]') : (row.recipe_photo || []),
+                ingredients: typeof row.ingredients === 'string' ? JSON.parse(row.ingredients || '[]') : (row.ingredients || []),
+                all_instructions: typeof row.all_instructions === 'string' ? JSON.parse(row.all_instructions || '[]') : (row.all_instructions || [])
             }))
         } catch (err) {
             throw err
