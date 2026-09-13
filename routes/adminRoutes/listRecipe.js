@@ -8,8 +8,8 @@ router.get('/admin/recipes_approved', verifyToken, authorize(['admin']), async (
         const respon = await recipeModel.getRecipeApproved()
 
         res.status(200).json(respon)
-    } catch (e) {
-        res.status(500).json({ message: e.message })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
     }
 })
 
@@ -18,8 +18,8 @@ router.get('/admin/recipes_processing', verifyToken, authorize(['admin']), async
         const respon = await recipeModel.getRecipeprocess()
 
         res.status(200).json(respon)
-    } catch (e) {
-        res.status(500).json({ message: e.message })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
     }
 })
 

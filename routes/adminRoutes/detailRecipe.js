@@ -12,8 +12,8 @@ router.get('/admin/recipes_approved/:recipeId', verifyToken, authorize(['admin']
         const detailRecipe = await recipeModel.getDetailRecipeApprovedById(recipeId)
         const adminComment = await recipeModel.getAdminCommentByIdRecipe(recipeId)
         res.status(200).json({detailRecipe, adminComment})
-    } catch (e) {
-        res.status(500).json({ message: e.message })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
     }
 })
 
@@ -25,8 +25,8 @@ router.get('/admin/recipes_processing/:recipeId', verifyToken, authorize(['admin
         
         const detailRecipe = await recipeModel.getDetailRecipeProcessById(recipeId)
         res.status(200).json({detailRecipe})
-    } catch (e) {
-        res.status(500).json({ message: e.message })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
     }
 })
 
@@ -42,8 +42,8 @@ router.patch('/admin/recipes_processing/:recipeId', verifyToken, authorize(['adm
         
         await recipeModel.updateStatusRecipe(status, adminComment, adminId, recipeId)
         res.status(200).json({ message: 'OK'})
-    } catch (e) {
-        res.status(500).json({ message: e.message })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
     }
 })
 

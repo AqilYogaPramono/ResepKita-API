@@ -5,7 +5,6 @@ var cookieParser = require('cookie-parser')
 var logger = require('morgan')
 var dotenv = require('dotenv')
 const cors = require('cors')
-const { onlyDomain } = require('./middlewares/corsOption')
 
 dotenv.config()
 

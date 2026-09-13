@@ -5,7 +5,6 @@ const adminModel = require('../models/adminModel')
 const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
-const limiter = require('../middlewares/ratelimiter')
 const jwt = require('jsonwebtoken')
 
 const storage = multer.diskStorage({
@@ -124,8 +123,8 @@ router.post('/register', upload.single('profile_photo'), async (req, res) => {
     try {
         await userModel.registerUser(photoProfile, username, nickname, email, password)
         res.status(201).json({ message: 'OK'})
-    } catch (e) {
-        res.status(500).json({ message: e.message })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
     }
     })
 
@@ -150,22 +149,26 @@ router.post('/register', upload.single('profile_photo'), async (req, res) => {
         }
         }
         res.status(200).json({ token: user.token, userType })
-    } catch (e) {
-        res.status(500).json({ message: e.message })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
     }
 })
 
 router.post('/logout', (req, res) => {
-    const token = req.headers.authorization?.split(' ')[1]
-    if (!token) {
-        return res.status(401).json({ message: 'No token provided.' })
-    }
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-        return res.status(401).json({ message: 'Token invalid.' })
+    try {
+        const token = req.headers.authorization?.split(' ')[1]
+        if (!token) {
+            return res.status(401).json({ message: 'No token provided.' })
         }
-        res.status(200).json({ message: 'Logout successful.' })
-    })
+        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+            if (err) {
+            return res.status(401).json({ message: 'Token invalid.' })
+            }
+            res.status(200).json({ message: 'Logout successful.' })
+        })
+    } catch (err) {
+        res.status(500).json({ message: err.message })
+    }
 })
 
 module.exports = router
