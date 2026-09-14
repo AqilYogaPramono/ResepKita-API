@@ -43,7 +43,12 @@ const deleteUploadedFile = (file) => {
 }
 
 router.get('/', (res) => {
-    res.status(200).json({ message: 'OK'})
+    try {
+        res.status(200).json({ message: 'OK'})
+    } catch (err) {
+        res.status(500).json({ message: 'Internal Server Error' })
+        console.log(err)
+    }
 })
 
 router.post('/register', upload.single('profile_photo'), async (req, res) => {
