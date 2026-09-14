@@ -42,6 +42,10 @@ const deleteUploadedFile = (file) => {
     }
 }
 
+router.get('/', (res) => {
+    res.status(200).json({ message: 'OK'})
+})
+
 router.post('/register', upload.single('profile_photo'), async (req, res) => {
     try {
         const { username, nickname, email, password, confirmationPassword } = req.body
