@@ -85,73 +85,88 @@ class recipeModel {
     }
 
     static async createRecipe(userId, title, description, portion, cookingTime, status, ingredients, instructions, recipePhotos) {
+        const connection = await db.getConnection()
         try {
-            const [recipeResult] = await db.query(`INSERT INTO recipes (user_id, title, description, portion, cooking_time, status) VALUES (?, ?, ?, ?, ?, ?)`, [userId, title, description, portion, cookingTime, status])
+            await connection.beginTransaction()
+
+            const [recipeResult] = await connection.query(`INSERT INTO recipes (user_id, title, description, portion, cooking_time, status) VALUES (?, ?, ?, ?, ?, ?)`, [userId, title, description, portion, cookingTime, status])
             const recipeId = recipeResult.insertId
 
             if (Array.isArray(ingredients)) {
                 for (const item of ingredients) {
-                    await db.query(`INSERT INTO ingredients (recipe_id, name) VALUES (?, ?)`, [recipeId, item])
+                    await connection.query(`INSERT INTO ingredients (recipe_id, name) VALUES (?, ?)`, [recipeId, item])
                 }
             }
 
             if (Array.isArray(instructions)) {
                 for (let i = 0; i < instructions.length; i++) {
-                    const desc = instructions[i].desc || instructions[i];
-                    try {
-                        const [instructionResult] = await db.query(`INSERT INTO instructions (recipe_id, step_description) VALUES (?, ?)`, [recipeId, desc])
-                        if (instructions[i].photos && Array.isArray(instructions[i].photos)) {
-                            for (const photo of instructions[i].photos) {
-                                await db.query(`INSERT INTO instruction_photos (instruction_id, photo_url) VALUES (?, ?)`, [instructionResult.insertId, photo])
-                            }
+                    const desc = instructions[i].desc || instructions[i]
+                    const [instructionResult] = await connection.query(`INSERT INTO instructions (recipe_id, step_description) VALUES (?, ?)`, [recipeId, desc])
+                    if (instructions[i].photos && Array.isArray(instructions[i].photos)) {
+                        for (const photo of instructions[i].photos) {
+                            await connection.query(`INSERT INTO instruction_photos (instruction_id, photo_url) VALUES (?, ?)`, [instructionResult.insertId, photo])
                         }
-                    } catch (err) {
-                        continue;
                     }
                 }
             }
 
             if (Array.isArray(recipePhotos)) {
                 for (const photo of recipePhotos) {
-                    await db.query(`INSERT INTO recipe_photos (recipe_id, photo_url) VALUES (?, ?)`, [recipeId, photo])
+                    await connection.query(`INSERT INTO recipe_photos (recipe_id, photo_url) VALUES (?, ?)`, [recipeId, photo])
                 }
             }
+
+            await connection.commit()
+            return recipeId
         } catch (err) {
+            await connection.rollback()
             throw err
+        } finally {
+            connection.release()
         }
     }
 
     static async updateRecipe(recipeId, title, description, portion, cookingTime, status, ingredients, instructions, recipePhotos, oldInstructionPhotos) {
+        const connection = await db.getConnection()
         try {
-            await db.query(`UPDATE recipes SET title = ?, description = ?, portion = ?, cooking_time = ?, status = ? WHERE id = ?`, [title, description, portion, cookingTime, status, recipeId])
+            await connection.beginTransaction()
 
-            try { await db.query(`DELETE FROM ingredients WHERE recipe_id = ?`, [recipeId]) } catch(e) { console.error('Error deleting ingredients:', e) }
-            try { await db.query(`DELETE FROM instructions WHERE recipe_id = ?`, [recipeId]) } catch(e) { console.error('Error deleting instructions:', e) }
-            try { await db.query(`DELETE FROM recipe_photos WHERE recipe_id = ?`, [recipeId]) } catch(e) { console.error('Error deleting recipe photos:', e) }
+            await connection.query(`UPDATE recipes SET title = ?, description = ?, portion = ?, cooking_time = ?, status = ? WHERE id = ?`, [title, description, portion, cookingTime, status, recipeId])
 
-            for (const item of ingredients) {
-                try { await db.query(`INSERT INTO ingredients (recipe_id, name) VALUES (?, ?)`, [recipeId, item]) } catch(e) { console.error('Error inserting ingredient:', e) }
-            }
+            await connection.query(`DELETE FROM ingredients WHERE recipe_id = ?`, [recipeId])
+            await connection.query(`DELETE FROM instructions WHERE recipe_id = ?`, [recipeId])
+            await connection.query(`DELETE FROM recipe_photos WHERE recipe_id = ?`, [recipeId])
 
-            for (let i = 0; i < instructions.length; i++) {
-                const desc = instructions[i].desc || instructions[i];
-                try {
-                    const [instructionResult] = await db.query(`INSERT INTO instructions (recipe_id, step_description) VALUES (?, ?)`, [recipeId, desc])
-                    if (instructions[i].photos && Array.isArray(instructions[i].photos)) {
-                        for (const photo of instructions[i].photos) {
-                            try { await db.query(`INSERT INTO instruction_photos (instruction_id, photo_url) VALUES (?, ?)`, [instructionResult.insertId, photo]) } catch(e) { console.error('Error inserting instruction photo:', e) }
-                        }
-                    }
-                } catch(e) {
-                    console.error('Error inserting instruction:', e)
+            if (Array.isArray(ingredients)) {
+                for (const item of ingredients) {
+                    await connection.query(`INSERT INTO ingredients (recipe_id, name) VALUES (?, ?)`, [recipeId, item])
                 }
             }
 
-            for (const photo of recipePhotos) {
-                try { await db.query(`INSERT INTO recipe_photos (recipe_id, photo_url) VALUES (?, ?)`, [recipeId, photo]) } catch(e) { console.error('Error inserting recipe photo:', e) }
+            if (Array.isArray(instructions)) {
+                for (let i = 0; i < instructions.length; i++) {
+                    const desc = instructions[i].desc || instructions[i]
+                    const [instructionResult] = await connection.query(`INSERT INTO instructions (recipe_id, step_description) VALUES (?, ?)`, [recipeId, desc])
+                    if (instructions[i].photos && Array.isArray(instructions[i].photos)) {
+                        for (const photo of instructions[i].photos) {
+                            await connection.query(`INSERT INTO instruction_photos (instruction_id, photo_url) VALUES (?, ?)`, [instructionResult.insertId, photo])
+                        }
+                    }
+                }
             }
+
+            if (Array.isArray(recipePhotos)) {
+                for (const photo of recipePhotos) {
+                    await connection.query(`INSERT INTO recipe_photos (recipe_id, photo_url) VALUES (?, ?)`, [recipeId, photo])
+                }
+            }
+
+            await connection.commit()
         } catch (err) {
+            await connection.rollback()
             throw err
+        } finally {
+            connection.release()
         }
     }
 
