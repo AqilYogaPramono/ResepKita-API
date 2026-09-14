@@ -45,7 +45,7 @@ const deleteUploadedFile = (file) => {
 router.post('/register', upload.single('profile_photo'), async (req, res) => {
     try {
         const { username, nickname, email, password, confirmationPassword } = req.body
-        const photoProfile = req.file ? req.file.filename : 'default.png'
+        const photoProfile = req.file ? req.file.filename : 'default.jpg'
 
         if (!username) {
             deleteUploadedFile(req.file)

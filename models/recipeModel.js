@@ -208,7 +208,7 @@ class recipeModel {
 
     static async getRecipeApproved() {
         try {
-            const [results] = await db.query(`SELECT r.id AS recipe_id, r.title AS recipe_name, u.username AS recipe_creator, a.username AS admin_name, (SELECT rp2.photo_url FROM recipe_photos rp2 WHERE rp2.recipe_id = r.id ORDER BY rp2.id ASC LIMIT 1) AS recipe_photo_url FROM recipes r LEFT JOIN users u ON r.user_id = u.id LEFT JOIN admins a ON r.admin_id = a.id WHERE r.status = 'approved' ORDER BY r.id DESC`)
+            const [results] = await db.query(`SELECT r.id AS recipe_id, r.title AS recipe_name, u.username AS recipe_creator, a.username AS admin_name FROM recipes r LEFT JOIN users u ON r.user_id = u.id LEFT JOIN admins a ON r.admin_id = a.id WHERE r.status = 'approved' ORDER BY r.id DESC`)
             return results
         } catch (err) {
             throw err
@@ -217,7 +217,7 @@ class recipeModel {
 
     static async getRecipeprocess() {
         try {
-            const [results] = await db.query(`SELECT r.id AS recipe_id, r.title AS recipe_name, u.username AS recipe_creator, (SELECT rp2.photo_url FROM recipe_photos rp2 WHERE rp2.recipe_id = r.id ORDER BY rp2.id ASC LIMIT 1) AS recipe_photo_url FROM recipes r LEFT JOIN users u ON r.user_id = u.id WHERE r.status = 'process' ORDER BY r.id DESC`)
+            const [results] = await db.query(`SELECT r.id AS recipe_id, r.title AS recipe_name, u.username AS recipe_creator FROM recipes r LEFT JOIN users u ON r.user_id = u.id WHERE r.status = 'process' ORDER BY r.id DESC`)
             return results
         } catch (err) {
             throw err

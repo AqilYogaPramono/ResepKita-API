@@ -21,8 +21,8 @@ router.get('/admin/recipes_approved/:recipeId', verifyToken, authorize(['admin']
 })
 
 router.get('/admin/recipes_processing/:recipeId', verifyToken, authorize(['admin']), async (req, res) => {
-    const {recipeId} = req.params
     try {
+        const {recipeId} = req.params
         const statusRecipe = await recipeModel.getRecipeById(recipeId)
         if (!statusRecipe || statusRecipe.length === 0) return res.status(404).json({ message: 'Recipe not found' })
         if (statusRecipe[0].status == 'approved') return res.status(403).json({ message: 'Recipe status is publish'})
