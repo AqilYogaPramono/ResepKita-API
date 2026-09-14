@@ -42,7 +42,7 @@ const deleteUploadedFile = (file) => {
     }
 }
 
-router.get('/', (res) => {
+router.get('/', (req, res) => {
     try {
         res.status(200).json({ message: 'OK'})
     } catch (err) {
