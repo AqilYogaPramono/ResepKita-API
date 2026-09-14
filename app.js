@@ -9,6 +9,8 @@ const multer = require('multer')
 
 dotenv.config()
 
+const indexRoutes = require('./routes/index')
+
 const authRoutes = require('./routes/auth')
 
 //admin
@@ -37,6 +39,7 @@ app.use(express.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(express.static(path.join(__dirname, 'public')))
 
+app.use('/', indexRoutes)
 app.use('/API', authRoutes)
 
 //admin
