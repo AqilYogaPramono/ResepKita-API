@@ -143,7 +143,6 @@ router.patch('/user/profile/:profileId', verifyToken, authorize(['user']), uploa
         await userModel.updateProfile(username, nickname, profile_photo, bio, userId)
 
         if (req.file) deleteOldPhoto(checkUserId[0].photo_profile)
-        console.log(checkUserId[0].photo_profile)
 
         res.status(200).json({message: 'OK'})
     } catch (e) {

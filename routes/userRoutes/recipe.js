@@ -6,6 +6,7 @@ const fs = require('fs')
 const recipeModel = require('../../models/recipeModel')
 const userModel = require('../../models/userModel')
 const { verifyToken, authorize } = require('../../middlewares/jwt')
+const { parseJsonFields } = require('../../middlewares/jsonParser')
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -89,43 +90,32 @@ router.get('/user/:recipeId/detail_recipe', verifyToken, authorize(['user']), as
     }
 })
 
-router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadFields, async (req, res) => {
+router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadFields, parseJsonFields(['ingredients', 'instructions', 'newInstructionPhotoCounts']), async (req, res) => {
     try {
         const userId = req.user.id
-        const { title, description, portion, cookingTime, status } = req.body
+        const { title, description, portion, cookingTime, status, ingredients, instructions, newInstructionPhotoCounts } = req.body
 
-        let ingredients = req.body.ingredients
-        let instructions = req.body.instructions
-        let newInstructionPhotoCounts = req.body.newInstructionPhotoCounts
-
-        if (typeof ingredients == 'string') try { ingredients = JSON.parse(ingredients) } catch { }
-        if (typeof instructions == 'string') try { instructions = JSON.parse(instructions) } catch { }
-        if (typeof newInstructionPhotoCounts == 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts) } catch { }
-
-        if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
-        if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
-        if (!Array.isArray(newInstructionPhotoCounts)) newInstructionPhotoCounts = newInstructionPhotoCounts ? [newInstructionPhotoCounts] : []
         const userCheck = await userModel.getUserById(userId)
         if (userCheck.length == 0) {
             deleteUploadedFiles(req.files)
             return res.status(404).json({ message: 'User not found' })
         }
 
-        const recipePhotos = req.files.recipePhotos ? req.files.recipePhotos.map(file => file.filename) : []
+        const recipePhotos = req.files?.recipePhotos ? req.files.recipePhotos.map(file => file.filename) : []
         if (recipePhotos.length > 3) {
             deleteUploadedFiles(req.files)
-            return res.status(404).json({ message: 'Maximum 3 recipe photos are allowed.' })
+            return res.status(400).json({ message: 'Maximum 3 recipe photos are allowed.' })
         }
 
-        if (status != 'process' && status != 'rejected') {
+        if (status !== 'process' && status !== 'rejected') {
             deleteUploadedFiles(req.files)
-            return res.status(404).json({ message: 'Please check status' })
+            return res.status(400).json({ message: 'Please check status' })
         }
 
-        const newInstructionPhotos = req.files.instructionPhotos ? req.files.instructionPhotos.map(file => file.filename) : []
+        const newInstructionPhotos = req.files?.instructionPhotos ? req.files.instructionPhotos.map(file => file.filename) : []
         let photoIdx = 0
         for (let i = 0; i < instructions.length; i++) {
-            const count = newInstructionPhotoCounts[i]
+            const count = newInstructionPhotoCounts[i] || 0
             const newPhotosForStep = newInstructionPhotos.slice(photoIdx, photoIdx + count)
             photoIdx += count
             instructions[i].photos = [...newPhotosForStep]
@@ -141,29 +131,12 @@ router.post('/user/create_recipe', verifyToken, authorize(['user']), uploadField
     }
 })
 
-router.patch('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), uploadFields, async (req, res) => {
+router.patch('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), uploadFields, parseJsonFields(['ingredients', 'instructions', 'oldRecipePhotos', 'oldInstructionPhotos', 'newInstructionPhotoCounts']), async (req, res) => {
     try {
         const { recipeId } = req.params
         const userId = req.user.id
-        const { title, description, portion, cookingTime, status } = req.body
+        const { title, description, portion, cookingTime, status, ingredients, instructions, oldRecipePhotos, oldInstructionPhotos, newInstructionPhotoCounts } = req.body
 
-        let ingredients = req.body.ingredients
-        let instructions = req.body.instructions
-        let oldRecipePhotos = req.body.oldRecipePhotos
-        let oldInstructionPhotos = req.body.oldInstructionPhotos
-        let newInstructionPhotoCounts = req.body.newInstructionPhotoCounts
-
-        if (typeof ingredients == 'string') try { ingredients = JSON.parse(ingredients) } catch { }
-        if (typeof instructions == 'string') try { instructions = JSON.parse(instructions) } catch { }
-        if (typeof oldRecipePhotos == 'string') try { oldRecipePhotos = JSON.parse(oldRecipePhotos) } catch { }
-        if (typeof oldInstructionPhotos == 'string') try { oldInstructionPhotos = JSON.parse(oldInstructionPhotos) } catch { }
-        if (typeof newInstructionPhotoCounts == 'string') try { newInstructionPhotoCounts = JSON.parse(newInstructionPhotoCounts) } catch { }
-
-        if (!Array.isArray(ingredients)) ingredients = ingredients ? [ingredients] : []
-        if (!Array.isArray(instructions)) instructions = instructions ? [instructions] : []
-        if (!Array.isArray(oldRecipePhotos)) oldRecipePhotos = oldRecipePhotos ? [oldRecipePhotos] : []
-        if (!Array.isArray(oldInstructionPhotos)) oldInstructionPhotos = oldInstructionPhotos ? [oldInstructionPhotos] : []
-        if (!Array.isArray(newInstructionPhotoCounts)) newInstructionPhotoCounts = newInstructionPhotoCounts ? [newInstructionPhotoCounts] : []
         const recipeData = await recipeModel.getRecipeByIdAndUser(recipeId, userId)
         if (!recipeData) {
             deleteUploadedFiles(req.files)
@@ -185,10 +158,10 @@ router.patch('/user/edit_recipe/:recipeId', verifyToken, authorize(['user']), up
             }
         })
 
-        const newRecipePhotos = req.files.recipePhotos ? req.files.recipePhotos.map(file => file.filename) : []
+        const newRecipePhotos = req.files?.recipePhotos ? req.files.recipePhotos.map(file => file.filename) : []
         const finalRecipePhotos = [...oldRecipePhotos, ...newRecipePhotos]
 
-        const newInstructionPhotos = req.files.instructionPhotos ? req.files.instructionPhotos.map(file => file.filename) : []
+        const newInstructionPhotos = req.files?.instructionPhotos ? req.files.instructionPhotos.map(file => file.filename) : []
         let photoIdx = 0
         for (let i = 0; i < instructions.length; i++) {
             const count = newInstructionPhotoCounts[i] || 0

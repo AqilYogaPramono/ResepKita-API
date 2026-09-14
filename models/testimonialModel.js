@@ -2,17 +2,25 @@ const db = require('../configs/db')
 
 class testimonialModel {
     static async createTestimoni(userId, recipeId, comment, testimonialPhotos) {
+        const connection = await db.getConnection()
         try {
-            const [testimonialResult] = await db.query(`INSERT INTO testimonials (user_id, recipe_id, comment) VALUES (?, ?, ?)`, [userId, recipeId, comment])
+            await connection.beginTransaction()
+            const [testimonialResult] = await connection.query(`INSERT INTO testimonials (user_id, recipe_id, comment) VALUES (?, ?, ?)`, [userId, recipeId, comment])
             const testimonialId = testimonialResult.insertId
-            
-            for (const photoUrl of testimonialPhotos) {
-                await db.query(`INSERT INTO testimonial_photos (testimonial_id, photo_url) VALUES (?, ?)`, [testimonialId, photoUrl])
+
+            if (Array.isArray(testimonialPhotos)) {
+                for (const photoUrl of testimonialPhotos) {
+                    await connection.query(`INSERT INTO testimonial_photos (testimonial_id, photo_url) VALUES (?, ?)`, [testimonialId, photoUrl])
+                }
             }
-            
+
+            await connection.commit()
             return { testimonialId, photoCount: testimonialPhotos.length }
         } catch (err) {
+            await connection.rollback()
             throw err
+        } finally {
+            connection.release()
         }
     }
 
