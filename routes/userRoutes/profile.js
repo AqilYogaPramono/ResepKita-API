@@ -43,7 +43,7 @@ const deleteUploadedFile = (file) => {
 }
 
 const deleteOldPhoto = (oldPhotoFilename) => {
-    if (oldPhotoFilename && oldPhotoFilename !== 'default.png') {
+    if (oldPhotoFilename && oldPhotoFilename !== 'default.jpg') {
         const filePath = path.join(__dirname, '../../public/images/users', oldPhotoFilename)
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath)
